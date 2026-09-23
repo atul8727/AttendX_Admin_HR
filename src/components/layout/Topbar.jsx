@@ -1,14 +1,45 @@
-import { useContext } from 'react'
-import { useLocation } from 'react-router-dom'
-import { FiBell, FiMenu, FiSearch } from 'react-icons/fi'
+import { useContext, useEffect, useRef, useState } from 'react'
+import { useDispatch } from 'react-redux'
+import { useLocation, useNavigate } from 'react-router-dom'
+import { FiBell, FiChevronDown, FiLogOut, FiMenu, FiSearch } from 'react-icons/fi'
 import { SidebarContext } from '../../context/SidebarContext.jsx'
+import { apiSlice, clearAuthSession, getAuthUser, getRefreshToken } from '../../store/apiSlice.js'
+import { useLogoutAdminMutation } from '../../store/api/authApi.js'
 import ThemeToggle from '../ui/ThemeToggle.jsx'
 import Avatar from '../ui/Avatar.jsx'
 
 export default function Topbar() {
   const { toggleMobileSidebar } = useContext(SidebarContext)
   const location = useLocation()
+  const navigate = useNavigate()
+  const dispatch = useDispatch()
+  const profileRef = useRef(null)
+  const [profileOpen, setProfileOpen] = useState(false)
+  const [logoutAdmin, { isLoading: logoutLoading }] = useLogoutAdminMutation()
+  const user = getAuthUser()
+  const displayName = user?.name || 'Admin'
+  const role = user?.role || 'ADMIN'
   const crumb = location.pathname === '/' ? 'Dashboard' : location.pathname.split('/').filter(Boolean).join(' / ')
+
+  useEffect(() => {
+    function handleClick(event) {
+      if (!profileRef.current?.contains(event.target)) setProfileOpen(false)
+    }
+    document.addEventListener('mousedown', handleClick)
+    return () => document.removeEventListener('mousedown', handleClick)
+  }, [])
+
+  async function handleLogout() {
+    try {
+      await logoutAdmin(getRefreshToken()).unwrap()
+    } catch (err) {
+      void err
+    } finally {
+      clearAuthSession()
+      dispatch(apiSlice.util.resetApiState())
+      navigate('/login', { replace: true })
+    }
+  }
 
   return (
     <header className="sticky top-0 z-20 flex min-h-16 flex-wrap items-center gap-2 border-b border-primary/10 bg-app-surface/90 px-3 py-3 backdrop-blur sm:flex-nowrap sm:gap-3 lg:px-6">
@@ -34,9 +65,33 @@ export default function Topbar() {
         <FiBell />
       </button>
       <ThemeToggle />
-      <div className="hidden items-center gap-2 rounded-lg bg-primary/5 p-1.5 sm:flex">
-        <Avatar name="Riya Kapoor" size="sm" />
-        <span className="pr-2 text-sm font-bold text-app-text">Riya</span>
+      <div className="relative hidden sm:block" ref={profileRef}>
+        <button
+          className="flex items-center gap-2 rounded-lg bg-primary/5 p-1.5 pr-2 transition hover:bg-primary/10"
+          onClick={() => setProfileOpen((current) => !current)}
+          aria-expanded={profileOpen}
+          aria-haspopup="menu"
+        >
+          <Avatar name={displayName} size="sm" />
+          <span className="max-w-24 truncate text-sm font-bold text-app-text">{displayName}</span>
+          <FiChevronDown className={`h-4 w-4 text-app-muted transition ${profileOpen ? 'rotate-180' : ''}`} />
+        </button>
+        {profileOpen && (
+          <div className="absolute right-0 mt-2 w-64 rounded-lg border border-primary/10 bg-app-surface p-2 shadow-soft ring-1 ring-white/40 dark:ring-white/5">
+            <div className="border-b border-primary/10 px-3 py-2">
+              <p className="truncate text-sm font-black text-app-text">{displayName}</p>
+              <p className="text-xs font-semibold uppercase tracking-wide text-app-muted">{role}</p>
+            </div>
+            <button
+              className="mt-2 flex w-full items-center gap-2 rounded-lg px-3 py-2 text-left text-sm font-bold text-danger transition hover:bg-danger/10 disabled:cursor-not-allowed disabled:opacity-60"
+              onClick={handleLogout}
+              disabled={logoutLoading}
+            >
+              <FiLogOut className="h-4 w-4" />
+              {logoutLoading ? 'Logging out...' : 'Logout'}
+            </button>
+          </div>
+        )}
       </div>
     </header>
   )

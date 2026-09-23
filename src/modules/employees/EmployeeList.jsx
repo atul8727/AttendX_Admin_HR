@@ -1,5 +1,5 @@
-import { useMemo, useState } from 'react'
-import { FiEdit, FiPlus, FiPower } from 'react-icons/fi'
+import { useEffect, useMemo, useState } from 'react'
+import { FiEdit, FiEye, FiPlus, FiPower } from 'react-icons/fi'
 import Avatar from '../../components/ui/Avatar.jsx'
 import Badge from '../../components/ui/Badge.jsx'
 import Button from '../../components/ui/Button.jsx'
@@ -10,85 +10,117 @@ import Modal from '../../components/ui/Modal.jsx'
 import Select from '../../components/ui/Select.jsx'
 import Table from '../../components/ui/Table.jsx'
 import { useDebounce } from '../../hooks/useDebounce.js'
-import { useFetch } from '../../hooks/useFetch.js'
-import { createEmployee, getEmployees, toggleEmployeeStatus, updateEmployee } from '../../services/employeeService.js'
-import { getOffices } from '../../services/officeService.js'
+import {
+  useAddEmployeeMutation,
+  useGetEmployeeQuery,
+  useGetEmployeesQuery,
+  useUpdateEmployeeMutation,
+  useUpdateEmployeeStatusMutation
+} from '../../store/api/employeesApi.js'
 
 const emptyForm = {
   code: '',
   name: '',
   email: '',
+  password: 'gk@123',
   phone: '',
   role: '',
   department: '',
   office: 'Noida HQ',
   expectedLogin: '09:30',
   expectedLogout: '18:30',
-  wfh: 'Enabled',
-  status: 'Active',
-  wfhLocation: { latitude: '', longitude: '', radius: 150 }
+  lateGraceMinutes: 15,
+  status: 'Active'
+}
+
+function formatDateTime(value) {
+  if (!value) return '-'
+  return new Intl.DateTimeFormat('en-IN', {
+    dateStyle: 'medium',
+    timeStyle: 'short'
+  }).format(new Date(value))
+}
+
+function DetailItem({ label, value }) {
+  return (
+    <div className="rounded-lg border border-primary/10 bg-app-bg p-3">
+      <p className="text-xs font-bold uppercase tracking-wide text-app-muted">{label}</p>
+      <p className="mt-1 break-words text-sm font-semibold text-app-text">{value ?? '-'}</p>
+    </div>
+  )
 }
 
 export default function EmployeeList() {
-  const { data, loading, error, refetch } = useFetch(getEmployees)
-  const { data: offices } = useFetch(getOffices)
   const [search, setSearch] = useState('')
   const [status, setStatus] = useState('All')
-  const [office, setOffice] = useState('All')
+  const [page, setPage] = useState(1)
+  const debounced = useDebounce(search)
+  const listParams = {
+    page,
+    limit: 20,
+    search: debounced,
+    status: status === 'All' ? '' : status.toUpperCase()
+  }
+  const { data: employeePage, isLoading, isFetching, isError, error } = useGetEmployeesQuery(listParams)
+  const [addEmployee, addState] = useAddEmployeeMutation()
+  const [updateEmployee, updateState] = useUpdateEmployeeMutation()
+  const [updateEmployeeStatus] = useUpdateEmployeeStatusMutation()
   const [modalOpen, setModalOpen] = useState(false)
+  const [viewingId, setViewingId] = useState(null)
   const [editingId, setEditingId] = useState(null)
   const [form, setForm] = useState(emptyForm)
-  const [formError, setFormError] = useState('')
-  const debounced = useDebounce(search)
+  const { data: viewingEmployee, isFetching: viewingLoading } = useGetEmployeeQuery(viewingId, { skip: !viewingId })
+  const mutationError = addState.error || updateState.error
+  const formError = mutationError?.data?.message || mutationError?.error || ''
+  const queryError = error?.data?.message || error?.error || ''
+  const data = employeePage?.items || []
+  const pagination = employeePage?.pagination || { page: 1, limit: 20, total: data.length, total_pages: 1 }
 
-  const rows = useMemo(() => {
-    if (!data) return []
-    return data.filter((employee) => {
-      const matchesSearch = `${employee.name} ${employee.code} ${employee.email}`.toLowerCase().includes(debounced.toLowerCase())
-      const matchesStatus = status === 'All' || employee.status === status
-      const matchesOffice = office === 'All' || employee.office === office
-      return matchesSearch && matchesStatus && matchesOffice
-    })
-  }, [data, debounced, status, office])
+  useEffect(() => {
+    setPage(1)
+  }, [debounced, status])
 
-  const officeOptions = [
-    { label: 'All Offices', value: 'All' },
-    ...(offices || []).map((item) => ({ label: item.name, value: item.name }))
-  ]
+  const rows = useMemo(() => data || [], [data])
 
   function openCreateModal() {
     setEditingId(null)
-    setForm({ ...emptyForm, code: `EMP${String((data?.length || 0) + 1).padStart(3, '0')}` })
-    setFormError('')
+    setForm({ ...emptyForm, code: `EMP${String((pagination.total || data.length) + 1).padStart(3, '0')}` })
     setModalOpen(true)
   }
 
   function openEditModal(employee) {
     setEditingId(employee.id)
-    setForm({ ...emptyForm, ...employee, wfhLocation: employee.wfhLocation || emptyForm.wfhLocation })
-    setFormError('')
+    setForm({ ...emptyForm, ...employee })
     setModalOpen(true)
+  }
+
+  function openViewModal(employee) {
+    setViewingId(employee.id)
   }
 
   async function handleSubmit(event) {
     event.preventDefault()
-    setFormError('')
     try {
-      if (editingId) await updateEmployee(editingId, form)
-      else await createEmployee(form)
+      if (editingId) await updateEmployee({ id: editingId, ...form }).unwrap()
+      else await addEmployee(form).unwrap()
       setModalOpen(false)
-      await refetch()
     } catch (err) {
-      setFormError(err.message)
+      void err
     }
   }
 
   async function handleToggle(employee) {
-    await toggleEmployeeStatus(employee.id)
-    await refetch()
+    try {
+      await updateEmployeeStatus({
+        id: employee.id,
+        status: employee.status === 'Active' ? 'Inactive' : 'Active'
+      }).unwrap()
+    } catch (err) {
+      void err
+    }
   }
 
-  if (loading) return <Loader />
+  if (isLoading) return <Loader />
 
   return (
     <div className="space-y-6">
@@ -96,7 +128,7 @@ export default function EmployeeList() {
         <div>
           <h1 className="text-2xl font-black">Employee Management</h1>
           <p className="text-sm text-app-muted">
-            {data.length} employees - Office assignment, WFH and timing configuration.
+            {pagination.total} employees - API synced employee directory and timing configuration.
           </p>
         </div>
         <Button icon={FiPlus} onClick={openCreateModal}>
@@ -105,8 +137,12 @@ export default function EmployeeList() {
       </div>
 
       <Card>
-        <div className="mb-4 grid gap-3 lg:grid-cols-[1fr_180px_220px]">
-          <Input placeholder="Search by name or code..." value={search} onChange={(event) => setSearch(event.target.value)} />
+        <div className="mb-4 grid gap-3 lg:grid-cols-[1fr_180px]">
+          <Input
+            placeholder="Search by name, code, email, or phone..."
+            value={search}
+            onChange={(event) => setSearch(event.target.value)}
+          />
           <Select
             value={status}
             onChange={(event) => setStatus(event.target.value)}
@@ -116,11 +152,12 @@ export default function EmployeeList() {
               { label: 'Inactive', value: 'Inactive' }
             ]}
           />
-          <Select value={office} onChange={(event) => setOffice(event.target.value)} options={officeOptions} />
         </div>
-        {error && <p className="mb-3 rounded-lg bg-danger/10 p-3 text-sm font-semibold text-danger">{error}</p>}
+        {isError && <p className="mb-3 rounded-lg bg-danger/10 p-3 text-sm font-semibold text-danger">{queryError}</p>}
+        {isFetching && !isLoading && <p className="mb-3 text-sm font-semibold text-app-muted">Refreshing employees...</p>}
         <Table
           rows={rows}
+          onRowClick={openViewModal}
           columns={[
             {
               key: 'name',
@@ -136,22 +173,42 @@ export default function EmployeeList() {
               )
             },
             { key: 'code', header: 'Code' },
-            { key: 'office', header: 'Office' },
+            { key: 'phone', header: 'Phone' },
             { key: 'expectedLogin', header: 'Expected Login' },
-            { key: 'wfh', header: 'WFH', render: (row) => <Badge status={row.wfh} /> },
+            { key: 'expectedLogout', header: 'Expected Logout' },
             { key: 'status', header: 'Status', render: (row) => <Badge status={row.status} /> },
             {
               key: 'actions',
               header: 'Actions',
               render: (row) => (
                 <div className="flex gap-2">
-                  <Button variant="info" icon={FiEdit} onClick={() => openEditModal(row)}>
+                  <Button
+                    variant="outline"
+                    icon={FiEye}
+                    onClick={(event) => {
+                      event.stopPropagation()
+                      openViewModal(row)
+                    }}
+                  >
+                    View
+                  </Button>
+                  <Button
+                    variant="info"
+                    icon={FiEdit}
+                    onClick={(event) => {
+                      event.stopPropagation()
+                      openEditModal(row)
+                    }}
+                  >
                     Edit
                   </Button>
                   <Button
                     variant={row.status === 'Active' ? 'danger' : 'success'}
                     icon={FiPower}
-                    onClick={() => handleToggle(row)}
+                    onClick={(event) => {
+                      event.stopPropagation()
+                      handleToggle(row)
+                    }}
                   >
                     {row.status === 'Active' ? 'Deactivate' : 'Activate'}
                   </Button>
@@ -160,66 +217,91 @@ export default function EmployeeList() {
             }
           ]}
         />
+        <div className="mt-4 flex flex-col gap-3 text-sm text-app-muted sm:flex-row sm:items-center sm:justify-between">
+          <span>
+            Page {pagination.page} of {pagination.total_pages} - Showing {rows.length} of {pagination.total}
+          </span>
+          <div className="flex gap-2">
+            <Button variant="ghost" disabled={page <= 1 || isFetching} onClick={() => setPage((current) => Math.max(1, current - 1))}>
+              Previous
+            </Button>
+            <Button
+              variant="ghost"
+              disabled={page >= pagination.total_pages || isFetching}
+              onClick={() => setPage((current) => current + 1)}
+            >
+              Next
+            </Button>
+          </div>
+        </div>
       </Card>
 
-      <Modal open={modalOpen} title={editingId ? 'Edit Employee' : 'Add Employee'} onClose={() => setModalOpen(false)}>
+      <Modal open={modalOpen} title={editingId ? 'Edit Employee' : 'Add Employee'} onClose={() => setModalOpen(false)} className="max-w-3xl">
         <form className="space-y-4" onSubmit={handleSubmit}>
           {formError && <p className="rounded-lg bg-danger/10 p-3 text-sm font-semibold text-danger">{formError}</p>}
           <div className="grid gap-4 md:grid-cols-2">
-            <Input label="Employee Code" value={form.code} onChange={(event) => setForm({ ...form, code: event.target.value })} required />
-            <Input label="Name" value={form.name} onChange={(event) => setForm({ ...form, name: event.target.value })} required />
-            <Input label="Email" type="email" value={form.email} onChange={(event) => setForm({ ...form, email: event.target.value })} required />
-            <Input label="Phone" value={form.phone} onChange={(event) => setForm({ ...form, phone: event.target.value })} required />
-            <Input label="Role" value={form.role} onChange={(event) => setForm({ ...form, role: event.target.value })} />
-            <Input label="Department" value={form.department} onChange={(event) => setForm({ ...form, department: event.target.value })} />
-            <Select
-              label="Assigned Office"
-              value={form.office}
-              onChange={(event) => setForm({ ...form, office: event.target.value })}
-              options={(offices || []).map((item) => ({ label: item.name, value: item.name }))}
+            <Input
+              label="Employee Code"
+              placeholder="EMP002"
+              value={form.code}
+              onChange={(event) => setForm({ ...form, code: event.target.value })}
+              disabled={Boolean(editingId)}
+              required
             />
-            <Select
-              label="WFH"
-              value={form.wfh}
-              onChange={(event) => setForm({ ...form, wfh: event.target.value })}
-              options={[
-                { label: 'Enabled', value: 'Enabled' },
-                { label: 'Disabled', value: 'Disabled' }
-              ]}
+            <Input
+              label="Name"
+              placeholder="Gulshan Kumar"
+              value={form.name}
+              onChange={(event) => setForm({ ...form, name: event.target.value })}
+              required
+            />
+            <Input
+              label="Email"
+              type="email"
+              placeholder="gulshandev524@gmail.com"
+              value={form.email}
+              onChange={(event) => setForm({ ...form, email: event.target.value })}
+              disabled={Boolean(editingId)}
+              required
+            />
+            {!editingId && (
+              <Input
+                label="Password"
+                type="password"
+                placeholder="gk@123"
+                value={form.password}
+                onChange={(event) => setForm({ ...form, password: event.target.value })}
+                required
+              />
+            )}
+            <Input
+              label="Phone"
+              placeholder="73939391450"
+              value={form.phone}
+              onChange={(event) => setForm({ ...form, phone: event.target.value })}
+              required
             />
             <Input
               label="Expected Login"
               type="time"
+              placeholder="10:00"
               value={form.expectedLogin}
               onChange={(event) => setForm({ ...form, expectedLogin: event.target.value })}
             />
             <Input
               label="Expected Logout"
               type="time"
+              placeholder="19:00"
               value={form.expectedLogout}
               onChange={(event) => setForm({ ...form, expectedLogout: event.target.value })}
             />
             <Input
-              label="WFH Latitude"
-              value={form.wfhLocation.latitude}
-              onChange={(event) =>
-                setForm({ ...form, wfhLocation: { ...form.wfhLocation, latitude: event.target.value } })
-              }
-            />
-            <Input
-              label="WFH Longitude"
-              value={form.wfhLocation.longitude}
-              onChange={(event) =>
-                setForm({ ...form, wfhLocation: { ...form.wfhLocation, longitude: event.target.value } })
-              }
-            />
-            <Input
-              label="WFH Radius"
+              label="Late Grace Minutes"
               type="number"
-              value={form.wfhLocation.radius}
-              onChange={(event) =>
-                setForm({ ...form, wfhLocation: { ...form.wfhLocation, radius: Number(event.target.value) } })
-              }
+              min="0"
+              placeholder="15"
+              value={form.lateGraceMinutes}
+              onChange={(event) => setForm({ ...form, lateGraceMinutes: Number(event.target.value) })}
             />
           </div>
           <div className="flex justify-end gap-2">
@@ -229,6 +311,51 @@ export default function EmployeeList() {
             <Button type="submit">{editingId ? 'Save Changes' : 'Create Employee'}</Button>
           </div>
         </form>
+      </Modal>
+
+      <Modal open={Boolean(viewingId)} title="Employee Details" onClose={() => setViewingId(null)} className="max-w-3xl">
+        {viewingLoading || !viewingEmployee ? (
+          <Loader />
+        ) : (
+          <div className="space-y-5">
+            <div className="flex flex-wrap items-center gap-4 rounded-lg bg-primary/5 p-4">
+              <Avatar name={viewingEmployee.name} />
+              <div className="min-w-0 flex-1">
+                <h3 className="truncate text-xl font-black text-app-text">{viewingEmployee.name}</h3>
+                <p className="text-sm font-semibold text-app-muted">{viewingEmployee.code}</p>
+              </div>
+              <Badge status={viewingEmployee.status} />
+            </div>
+            <div className="grid gap-3 md:grid-cols-2">
+              <DetailItem label="Employee ID" value={viewingEmployee.id} />
+              <DetailItem label="Employee Code" value={viewingEmployee.code} />
+              <DetailItem label="Email" value={viewingEmployee.email} />
+              <DetailItem label="Phone" value={viewingEmployee.phone} />
+              <DetailItem label="Expected Login Time" value={viewingEmployee.expectedLogin} />
+              <DetailItem label="Expected Logout Time" value={viewingEmployee.expectedLogout} />
+              <DetailItem label="Late Grace Minutes" value={viewingEmployee.lateGraceMinutes} />
+              <DetailItem label="Status" value={viewingEmployee.status} />
+              <DetailItem label="Created At" value={formatDateTime(viewingEmployee.createdAt)} />
+              <DetailItem label="Updated At" value={formatDateTime(viewingEmployee.updatedAt)} />
+            </div>
+            <div className="flex justify-end gap-2">
+              <Button type="button" variant="ghost" onClick={() => setViewingId(null)}>
+                Close
+              </Button>
+              <Button
+                type="button"
+                variant="info"
+                icon={FiEdit}
+                onClick={() => {
+                  openEditModal(viewingEmployee)
+                  setViewingId(null)
+                }}
+              >
+                Edit
+              </Button>
+            </div>
+          </div>
+        )}
       </Modal>
     </div>
   )

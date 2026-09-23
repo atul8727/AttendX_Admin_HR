@@ -9,19 +9,37 @@ import StatCard from '../../components/ui/StatCard.jsx'
 import Table from '../../components/ui/Table.jsx'
 import { useFetch } from '../../hooks/useFetch.js'
 import { getAttendance } from '../../services/attendanceService.js'
-import { getDeviceRequests } from '../../services/deviceService.js'
 import { getEmployees } from '../../services/employeeService.js'
 import { getLeaveRequests } from '../../services/leaveService.js'
+import { useGetDeviceChangeRequestsQuery } from '../../store/api/devicesApi.js'
+import { useGetEmployeeQuery } from '../../store/api/employeesApi.js'
+
+function DevicePendingItem({ request }) {
+  const { data: employee } = useGetEmployeeQuery(request.employeeId, { skip: !request.employeeId })
+  return (
+    <div className="rounded-lg bg-app-bg p-3">
+      <div className="flex items-center gap-3">
+        <Avatar name={employee?.name || String(request.employeeId)} size="sm" />
+        <div className="min-w-0">
+          <p className="truncate font-bold">{employee?.name || `Employee #${request.employeeId}`}</p>
+          <p className="truncate text-sm text-app-muted">{request.newDeviceModel || request.newDeviceId}</p>
+        </div>
+      </div>
+      <Link to="/devices"><Button variant="success" className="mt-3 w-full">Review</Button></Link>
+    </div>
+  )
+}
 
 export default function Dashboard() {
   const { data: employees, loading: employeesLoading } = useFetch(getEmployees)
   const { data: attendance, loading: attendanceLoading } = useFetch(getAttendance)
-  const { data: devices } = useFetch(getDeviceRequests)
+  const { data: devicePage } = useGetDeviceChangeRequestsQuery({ status: 'PENDING', limit: 5 })
   const { data: leaves } = useFetch(getLeaveRequests)
   if (employeesLoading || attendanceLoading) return <Loader />
 
   const today = '2026-09-22'
-  const pendingDevices = devices?.filter((device) => device.status === 'Pending') || []
+  const pendingDevices = devicePage?.items || []
+  const pendingDeviceCount = devicePage?.pagination?.total ?? pendingDevices.length
   const pendingLeaves = leaves?.filter((leave) => leave.status === 'Pending') || []
   const onLeaveToday =
     leaves?.filter((leave) => leave.status === 'Approved' && leave.from <= today && leave.to >= today).length || 0
@@ -30,7 +48,7 @@ export default function Dashboard() {
     { label: 'Present Today', value: attendance.filter((item) => item.status === 'Present').length, icon: FiCalendar, tone: 'success', to: '/attendance' },
     { label: 'Late Today', value: attendance.filter((item) => item.status === 'Late').length, icon: FiClock, tone: 'warning', to: '/attendance' },
     { label: 'On Leave', value: onLeaveToday, icon: FiCalendar, tone: 'secondary', to: '/leave/requests' },
-    { label: 'Device Requests', value: pendingDevices.length, icon: FiCpu, tone: 'danger', to: '/devices' },
+    { label: 'Device Requests', value: pendingDeviceCount, icon: FiCpu, tone: 'danger', to: '/devices' },
     { label: 'Leave Requests', value: pendingLeaves.length, icon: FiCalendar, tone: 'info', to: '/leave/requests' }
   ]
 
@@ -65,16 +83,7 @@ export default function Dashboard() {
             <h2 className="mb-4 text-lg font-bold">Device Approvals</h2>
             <div className="space-y-3">
               {pendingDevices.map((item) => (
-                <div key={item.id} className="rounded-lg bg-app-bg p-3">
-                  <div className="flex items-center gap-3">
-                    <Avatar name={item.employee} size="sm" />
-                    <div className="min-w-0">
-                      <p className="truncate font-bold">{item.employee}</p>
-                      <p className="truncate text-sm text-app-muted">{item.requestedDevice}</p>
-                    </div>
-                  </div>
-                  <Link to="/devices"><Button variant="success" className="mt-3 w-full">Review</Button></Link>
-                </div>
+                <DevicePendingItem key={item.id} request={item} />
               ))}
             </div>
           </Card>

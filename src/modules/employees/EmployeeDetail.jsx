@@ -3,12 +3,11 @@ import Avatar from '../../components/ui/Avatar.jsx'
 import Badge from '../../components/ui/Badge.jsx'
 import Card from '../../components/ui/Card.jsx'
 import ProgressBar from '../../components/ui/ProgressBar.jsx'
-import { useFetch } from '../../hooks/useFetch.js'
-import { getEmployeeById } from '../../services/employeeService.js'
+import { useGetEmployeeQuery } from '../../store/api/employeesApi.js'
 
 export default function EmployeeDetail() {
   const { id = 'EMP-001' } = useParams()
-  const { data: employee } = useFetch(() => getEmployeeById(id), [id])
+  const { data: employee } = useGetEmployeeQuery(id)
   if (!employee) return null
   const tabs = ['Profile', 'Office Assignment', 'WFH Location', 'Leave Balance', 'Device History']
   return (
