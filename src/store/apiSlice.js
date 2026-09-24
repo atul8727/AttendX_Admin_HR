@@ -1,12 +1,16 @@
 import { createApi, fetchBaseQuery } from '@reduxjs/toolkit/query/react'
+import { MODULE_API_STATUS } from '../config/moduleApiStatus.js'
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL
 const TOKEN_KEY = 'attendx-token'
 const REFRESH_TOKEN_KEY = 'attendx-refresh-token'
 const USER_KEY = 'attendx-user'
+export const LOCAL_DEMO_TOKEN = 'local-demo-token'
 
 export function getAuthToken() {
-  return localStorage.getItem(TOKEN_KEY)
+  const token = localStorage.getItem(TOKEN_KEY)
+  if (MODULE_API_STATUS.auth && token === LOCAL_DEMO_TOKEN) return null
+  return token
 }
 
 export function getRefreshToken() {
@@ -43,8 +47,22 @@ export const apiSlice = createApi({
       const token = getAuthToken()
       if (token) headers.set('authorization', `Bearer ${token}`)
       return headers
+    },
+    responseHandler: async (response) => {
+      const contentType = response.headers.get('content-type') || ''
+      const isJson = contentType.includes('application/json')
+
+      if (!isJson) {
+        const text = await response.text()
+        const preview = text.replace(/\s+/g, ' ').trim().slice(0, 120)
+        throw new Error(
+          `Server se JSON nahi mila (status ${response.status}). Backend URL/route check karo.${preview ? ` Response: ${preview}` : ''}`
+        )
+      }
+
+      return response.json()
     }
   }),
-  tagTypes: ['Employee', 'DeviceRequest', 'EmployeeDevice'],
+tagTypes: ['Employee', 'DeviceRequest', 'EmployeeDevice', 'AttendanceOverride'],
   endpoints: () => ({})
 })

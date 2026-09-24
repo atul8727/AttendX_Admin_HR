@@ -55,7 +55,7 @@ export default function Dashboard() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-2xl font-black text-app-text">Dashboard</h1>
+        <h1 className="text-xl font-black text-app-text sm:text-2xl">Dashboard</h1>
         <p className="text-sm text-app-muted">Admin / Overview - read-only summary with pending actions.</p>
       </div>
       <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
@@ -65,7 +65,7 @@ export default function Dashboard() {
           </Link>
         ))}
       </div>
-      <div className="grid gap-6 xl:grid-cols-3">
+      <div className="grid min-w-0 gap-6 xl:grid-cols-3">
         <Card className="xl:col-span-2">
           <h2 className="mb-4 text-lg font-bold">Today&apos;s Attendance</h2>
           <Table
@@ -78,7 +78,7 @@ export default function Dashboard() {
             ]}
           />
         </Card>
-        <div className="space-y-6">
+        <div className="min-w-0 space-y-6">
           <Card>
             <h2 className="mb-4 text-lg font-bold">Device Approvals</h2>
             <div className="space-y-3">

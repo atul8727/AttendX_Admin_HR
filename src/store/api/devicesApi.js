@@ -84,10 +84,11 @@ export const devicesApi = apiSlice.injectEndpoints({
         method: 'POST'
       }),
       transformResponse: (response) => normalizeDeviceRequest(unwrapData(response)),
-      invalidatesTags: (_result, _error, id) => [
+      invalidatesTags: (result, _error, id) => [
         { type: 'DeviceRequest', id },
         { type: 'DeviceRequest', id: 'LIST' },
-        { type: 'EmployeeDevice', id: 'LIST' }
+        { type: 'EmployeeDevice', id: 'LIST' },
+        ...(result?.employeeId ? [{ type: 'EmployeeDevice', id: result.employeeId }] : [])
       ]
     }),
 
@@ -110,6 +111,7 @@ export const devicesApi = apiSlice.injectEndpoints({
       query: (employeeId) => `/admin/employees/${employeeId}/devices`,
       transformResponse: (response) => unwrapCollection(response).map(normalizeEmployeeDevice),
       providesTags: (result, _error, employeeId) => [
+        { type: 'EmployeeDevice', id: 'LIST' },
         { type: 'EmployeeDevice', id: employeeId },
         ...(result || []).map((device) => ({ type: 'EmployeeDevice', id: device.id }))
       ]

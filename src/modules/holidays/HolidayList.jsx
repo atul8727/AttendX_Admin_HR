@@ -13,5 +13,19 @@ export default function HolidayList() {
     await refetch()
   }
   if (loading) return <Loader />
-  return <Card><div className="mb-4 flex justify-between"><h1 className="text-2xl font-black">Holiday Management</h1><Button icon={FiPlus}>Add Holiday</Button></div><Table rows={data} columns={[{ key: 'date', header: 'Date' }, { key: 'name', header: 'Holiday' }, { key: 'type', header: 'Type' }, { key: 'office', header: 'Office' }, { key: 'actions', header: 'Actions', render: (row) => <div className="flex gap-2"><Button variant="info" icon={FiEdit} className="px-3" /><Button variant="danger" icon={FiTrash2} className="px-3" onClick={() => handleDelete(row.id)} /></div> }]} /></Card>
+  return (
+    <Card>
+      <div className="mb-4 flex flex-col justify-between gap-3 sm:flex-row sm:items-center">
+        <h1 className="text-xl font-black sm:text-2xl">Holiday Management</h1>
+        <Button icon={FiPlus} className="w-full sm:w-auto">Add Holiday</Button>
+      </div>
+      <Table rows={data} columns={[
+        { key: 'date', header: 'Date' },
+        { key: 'name', header: 'Holiday' },
+        { key: 'type', header: 'Type' },
+        { key: 'office', header: 'Office' },
+        { key: 'actions', header: 'Actions', render: (row) => <div className="flex flex-wrap gap-2"><Button variant="info" icon={FiEdit} className="px-3" /><Button variant="danger" icon={FiTrash2} className="px-3" onClick={() => handleDelete(row.id)} /></div> }
+      ]} />
+    </Card>
+  )
 }

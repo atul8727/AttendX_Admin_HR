@@ -4,22 +4,18 @@ import { FiLock, FiMail, FiLoader } from 'react-icons/fi'
 import Button from '../../components/ui/Button.jsx'
 import Input from '../../components/ui/Input.jsx'
 import logo from '../../assets/logo.svg'
-import { getAuthToken, setAuthSession } from '../../store/apiSlice.js'
-import { useLoginAdminMutation } from '../../store/api/authApi.js'
+import { useAuth } from '../../hooks/useAuth.js'
+import { getAuthToken } from '../../store/apiSlice.js'
 
 const initialForm = {
   login: '',
   password: ''
 }
 
-function getErrorMessage(error) {
-  return error?.data?.message || error?.error || 'Login failed'
-}
-
 export default function Login() {
   const navigate = useNavigate()
   const [form, setForm] = useState(initialForm)
-  const [loginAdmin, { isLoading, isError, error }] = useLoginAdminMutation()
+  const { login, isLoading, isError, errorMessage } = useAuth()
 
   useEffect(() => {
     if (getAuthToken()) navigate('/', { replace: true })
@@ -28,8 +24,7 @@ export default function Login() {
   async function handleSubmit(event) {
     event.preventDefault()
     try {
-      const response = await loginAdmin(form).unwrap()
-      setAuthSession(response.data)
+      await login(form)
       navigate('/', { replace: true })
     } catch (err) {
       void err
@@ -58,7 +53,7 @@ export default function Login() {
           <form className="space-y-5" onSubmit={handleSubmit}>
             {isError && (
               <p className="rounded-lg border border-danger/20 bg-danger/10 p-3 text-center text-sm font-semibold text-danger">
-                {getErrorMessage(error)}
+                {errorMessage}
               </p>
             )}
 

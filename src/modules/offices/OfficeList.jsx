@@ -16,9 +16,9 @@ export default function OfficeList() {
   if (loading) return <Loader />
   return (
     <div className="space-y-6">
-      <div className="flex justify-between gap-3">
-        <div><h1 className="text-2xl font-black">Office Management</h1><p className="text-sm text-app-muted">Offices, geofences, and employee WFH setup.</p></div>
-        <Button icon={FiPlus}>Add Office</Button>
+      <div className="flex flex-col justify-between gap-3 sm:flex-row sm:items-end">
+        <div><h1 className="text-xl font-black sm:text-2xl">Office Management</h1><p className="text-sm text-app-muted">Offices, geofences, and employee WFH setup.</p></div>
+        <Button icon={FiPlus} className="w-full sm:w-auto">Add Office</Button>
       </div>
       <Card>
         <Table rows={data} columns={[
@@ -27,7 +27,7 @@ export default function OfficeList() {
           { key: 'radius', header: 'Geofence' },
           { key: 'employees', header: 'Employees' },
           { key: 'status', header: 'Status', render: (row) => <Badge status={row.status} /> },
-          { key: 'actions', header: 'Actions', render: (row) => <div className="flex gap-2"><Button variant="info" icon={FiEdit} className="px-3" /><Button variant={row.status === 'Active' ? 'danger' : 'success'} icon={FiPower} className="px-3" onClick={() => handleToggle(row.id)} /></div> }
+          { key: 'actions', header: 'Actions', render: (row) => <div className="flex flex-wrap gap-2"><Button variant="info" icon={FiEdit} className="px-3" /><Button variant={row.status === 'Active' ? 'danger' : 'success'} icon={FiPower} className="px-3" onClick={() => handleToggle(row.id)} /></div> }
         ]} />
       </Card>
     </div>

@@ -10,13 +10,7 @@ import Modal from '../../components/ui/Modal.jsx'
 import Select from '../../components/ui/Select.jsx'
 import Table from '../../components/ui/Table.jsx'
 import { useDebounce } from '../../hooks/useDebounce.js'
-import {
-  useAddEmployeeMutation,
-  useGetEmployeeQuery,
-  useGetEmployeesQuery,
-  useUpdateEmployeeMutation,
-  useUpdateEmployeeStatusMutation
-} from '../../store/api/employeesApi.js'
+import { useEmployee, useEmployeeList, useEmployeeMutations } from '../../hooks/useEmployees.js'
 
 const emptyForm = {
   code: '',
@@ -61,20 +55,25 @@ export default function EmployeeList() {
     search: debounced,
     status: status === 'All' ? '' : status.toUpperCase()
   }
-  const { data: employeePage, isLoading, isFetching, isError, error } = useGetEmployeesQuery(listParams)
-  const [addEmployee, addState] = useAddEmployeeMutation()
-  const [updateEmployee, updateState] = useUpdateEmployeeMutation()
-  const [updateEmployeeStatus] = useUpdateEmployeeStatusMutation()
+  const {
+    data,
+    pagination: employeePagination,
+    loading: isLoading,
+    fetching: isFetching,
+    isError,
+    error,
+    refetch: refetchEmployees
+  } = useEmployeeList(listParams)
+  const { addEmployee, updateEmployee, updateEmployeeStatus, addState, updateState } = useEmployeeMutations()
   const [modalOpen, setModalOpen] = useState(false)
   const [viewingId, setViewingId] = useState(null)
   const [editingId, setEditingId] = useState(null)
   const [form, setForm] = useState(emptyForm)
-  const { data: viewingEmployee, isFetching: viewingLoading } = useGetEmployeeQuery(viewingId, { skip: !viewingId })
+  const { data: viewingEmployee, fetching: viewingLoading } = useEmployee(viewingId, { skip: !viewingId })
   const mutationError = addState.error || updateState.error
-  const formError = mutationError?.data?.message || mutationError?.error || ''
-  const queryError = error?.data?.message || error?.error || ''
-  const data = employeePage?.items || []
-  const pagination = employeePage?.pagination || { page: 1, limit: 20, total: data.length, total_pages: 1 }
+  const formError = mutationError?.data?.message || mutationError?.error || mutationError?.message || ''
+  const queryError = error || ''
+  const pagination = employeePagination || { page: 1, limit: 20, total: data.length, total_pages: 1 }
 
   useEffect(() => {
     setPage(1)
@@ -101,8 +100,9 @@ export default function EmployeeList() {
   async function handleSubmit(event) {
     event.preventDefault()
     try {
-      if (editingId) await updateEmployee({ id: editingId, ...form }).unwrap()
-      else await addEmployee(form).unwrap()
+      if (editingId) await updateEmployee(editingId, form)
+      else await addEmployee(form)
+      await refetchEmployees()
       setModalOpen(false)
     } catch (err) {
       void err
@@ -111,10 +111,8 @@ export default function EmployeeList() {
 
   async function handleToggle(employee) {
     try {
-      await updateEmployeeStatus({
-        id: employee.id,
-        status: employee.status === 'Active' ? 'Inactive' : 'Active'
-      }).unwrap()
+      await updateEmployeeStatus(employee.id, employee.status === 'Active' ? 'Inactive' : 'Active')
+      await refetchEmployees()
     } catch (err) {
       void err
     }
@@ -126,12 +124,12 @@ export default function EmployeeList() {
     <div className="space-y-6">
       <div className="flex flex-col justify-between gap-3 sm:flex-row sm:items-end">
         <div>
-          <h1 className="text-2xl font-black">Employee Management</h1>
-          <p className="text-sm text-app-muted">
-            {pagination.total} employees - API synced employee directory and timing configuration.
-          </p>
+          <h1 className="text-xl font-black sm:text-2xl">Employee Management</h1>
+        <p className="text-sm text-app-muted">
+ {pagination.total} employees - manage profiles, roles and attendance timing in one place.
+</p>
         </div>
-        <Button icon={FiPlus} onClick={openCreateModal}>
+        <Button icon={FiPlus} onClick={openCreateModal} className="w-full sm:w-auto">
           Add Employee
         </Button>
       </div>
@@ -163,11 +161,11 @@ export default function EmployeeList() {
               key: 'name',
               header: 'Employee',
               render: (row) => (
-                <div className="flex items-center gap-3">
+                <div className="flex min-w-0 items-center gap-3">
                   <Avatar name={row.name} />
-                  <div>
-                    <p className="font-bold">{row.name}</p>
-                    <p className="text-xs text-app-muted">{row.email}</p>
+                  <div className="min-w-0">
+                    <p className="truncate font-bold">{row.name}</p>
+                    <p className="truncate text-xs text-app-muted">{row.email}</p>
                   </div>
                 </div>
               )
@@ -181,7 +179,7 @@ export default function EmployeeList() {
               key: 'actions',
               header: 'Actions',
               render: (row) => (
-                <div className="flex gap-2">
+                <div className="flex flex-wrap gap-2">
                   <Button
                     variant="outline"
                     icon={FiEye}
@@ -190,7 +188,6 @@ export default function EmployeeList() {
                       openViewModal(row)
                     }}
                   >
-                    View
                   </Button>
                   <Button
                     variant="info"
@@ -200,7 +197,6 @@ export default function EmployeeList() {
                       openEditModal(row)
                     }}
                   >
-                    Edit
                   </Button>
                   <Button
                     variant={row.status === 'Active' ? 'danger' : 'success'}
@@ -221,7 +217,7 @@ export default function EmployeeList() {
           <span>
             Page {pagination.page} of {pagination.total_pages} - Showing {rows.length} of {pagination.total}
           </span>
-          <div className="flex gap-2">
+          <div className="flex flex-wrap gap-2">
             <Button variant="ghost" disabled={page <= 1 || isFetching} onClick={() => setPage((current) => Math.max(1, current - 1))}>
               Previous
             </Button>
@@ -304,11 +300,11 @@ export default function EmployeeList() {
               onChange={(event) => setForm({ ...form, lateGraceMinutes: Number(event.target.value) })}
             />
           </div>
-          <div className="flex justify-end gap-2">
-            <Button type="button" variant="ghost" onClick={() => setModalOpen(false)}>
-              Cancel
-            </Button>
-            <Button type="submit">{editingId ? 'Save Changes' : 'Create Employee'}</Button>
+          <div className="flex flex-col-reverse justify-end gap-2 sm:flex-row">
+              <Button type="button" variant="ghost" onClick={() => setModalOpen(false)} className="w-full sm:w-auto">
+                Cancel
+              </Button>
+            <Button type="submit" className="w-full sm:w-auto">{editingId ? 'Save Changes' : 'Create Employee'}</Button>
           </div>
         </form>
       </Modal>
@@ -338,14 +334,15 @@ export default function EmployeeList() {
               <DetailItem label="Created At" value={formatDateTime(viewingEmployee.createdAt)} />
               <DetailItem label="Updated At" value={formatDateTime(viewingEmployee.updatedAt)} />
             </div>
-            <div className="flex justify-end gap-2">
-              <Button type="button" variant="ghost" onClick={() => setViewingId(null)}>
+            <div className="flex flex-col-reverse justify-end gap-2 sm:flex-row">
+              <Button type="button" variant="ghost" onClick={() => setViewingId(null)} className="w-full sm:w-auto">
                 Close
               </Button>
               <Button
                 type="button"
                 variant="info"
                 icon={FiEdit}
+                className="w-full sm:w-auto"
                 onClick={() => {
                   openEditModal(viewingEmployee)
                   setViewingId(null)

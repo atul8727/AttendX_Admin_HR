@@ -28,13 +28,13 @@ export default function Settings() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-2xl font-black">System Configuration</h1>
+        <h1 className="text-xl font-black sm:text-2xl">System Configuration</h1>
         <p className="text-sm text-app-muted">Global business-rule values.</p>
       </div>
       <Card>
         <div className="divide-y divide-primary/10">
-          <div className="flex flex-wrap items-center justify-between gap-4 py-4 first:pt-0">
-            <div>
+          <div className="flex flex-col justify-between gap-4 py-4 first:pt-0 sm:flex-row sm:items-center">
+            <div className="min-w-0">
               <p className="font-bold">Monthly Grace Occurrences</p>
               <p className="text-sm text-app-muted">Late arrivals forgiven per month without penalty.</p>
             </div>
@@ -45,12 +45,12 @@ export default function Settings() {
               onChange={(value) => setSettings({ ...settings, graceOccurrences: value })}
             />
           </div>
-          <div className="flex flex-wrap items-center justify-between gap-4 py-4">
-            <div>
+          <div className="flex flex-col justify-between gap-4 py-4 sm:flex-row sm:items-center">
+            <div className="min-w-0">
               <p className="font-bold">Default Check-in Geofence Radius</p>
               <p className="text-sm text-app-muted">Default radius applied while creating a new office.</p>
             </div>
-            <div className="flex items-center gap-3">
+            <div className="flex shrink-0 items-center gap-3">
               <Stepper
                 value={settings.defaultGeofenceRadius}
                 min={50}
@@ -60,16 +60,16 @@ export default function Settings() {
               <span className="text-sm font-bold text-app-muted">m</span>
             </div>
           </div>
-          <div className="flex flex-wrap items-center justify-between gap-4 py-4">
-            <div>
+          <div className="flex flex-col justify-between gap-4 py-4 sm:flex-row sm:items-center">
+            <div className="min-w-0">
               <p className="font-bold">Mock GPS Enforcement</p>
               <p className="text-sm text-app-muted">Currently logs suspicious GPS activity instead of blocking attendance.</p>
             </div>
             <Badge status={settings.mockGpsEnforcement} />
           </div>
         </div>
-        <div className="mt-5 flex items-center gap-3">
-          <Button onClick={handleSave}>Save Settings</Button>
+        <div className="mt-5 flex flex-col gap-3 sm:flex-row sm:items-center">
+          <Button onClick={handleSave} className="w-full sm:w-auto">Save Settings</Button>
           {saved && <span className="text-sm font-bold text-success">Saved to localStorage</span>}
         </div>
       </Card>

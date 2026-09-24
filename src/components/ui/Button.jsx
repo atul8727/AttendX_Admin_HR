@@ -11,11 +11,11 @@ const variants = {
 export default function Button({ children, variant = 'primary', className = '', icon: Icon, ...props }) {
   return (
     <button
-      className={`inline-flex min-h-10 items-center justify-center gap-2 rounded-lg px-4 py-2 text-sm font-semibold transition disabled:cursor-not-allowed disabled:opacity-60 ${variants[variant]} ${className}`}
+      className={`inline-flex min-h-10 min-w-0 items-center justify-center gap-2 rounded-lg px-4 py-2 text-center text-sm font-semibold transition disabled:cursor-not-allowed disabled:opacity-60 ${variants[variant]} ${className}`}
       {...props}
     >
-      {Icon && <Icon className="h-4 w-4" />}
-      {children}
+      {Icon && <Icon className="h-4 w-4 shrink-0" />}
+      {children && <span className="min-w-0 truncate">{children}</span>}
     </button>
   )
 }
