@@ -1,7 +1,7 @@
 import { createApi, fetchBaseQuery } from '@reduxjs/toolkit/query/react'
 import { MODULE_API_STATUS } from '../config/moduleApiStatus.js'
 
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL
+export const API_BASE_URL = import.meta.env.VITE_API_BASE_URL
 const TOKEN_KEY = 'attendx-token'
 const REFRESH_TOKEN_KEY = 'attendx-refresh-token'
 const USER_KEY = 'attendx-user'
@@ -63,6 +63,6 @@ export const apiSlice = createApi({
       return response.json()
     }
   }),
-tagTypes: ['Employee', 'DeviceRequest', 'EmployeeDevice', 'AttendanceOverride'],
+tagTypes: ['Employee', 'DeviceRequest', 'EmployeeDevice', 'AttendanceOverride', 'Holiday','LeaveType', 'LeaveBalance', 'LeaveRequest', 'Report'],
   endpoints: () => ({})
 })

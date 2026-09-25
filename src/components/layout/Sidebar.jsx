@@ -13,13 +13,13 @@ export default function Sidebar() {
     <>
       {mobileOpen && (
         <button
-          className="fixed inset-0 z-30 bg-slate-950/50 lg:hidden"
+          className="fixed inset-0 z-30 bg-slate-950/50 print:hidden lg:hidden"
           onClick={closeMobileSidebar}
           aria-label="Close navigation"
         />
       )}
       <aside
-        className={`fixed inset-y-0 left-0 z-40 flex w-[min(18rem,calc(100vw-1rem))] -translate-x-full flex-col bg-[#023859] text-white shadow-soft transition lg:translate-x-0 ${width} ${mobileOpen ? 'translate-x-0' : ''}`}
+        className={`fixed inset-y-0 left-0 z-40 flex w-[min(18rem,calc(100vw-1rem))] -translate-x-full flex-col bg-[#023859] text-white shadow-soft transition print:hidden lg:translate-x-0 ${width} ${mobileOpen ? 'translate-x-0' : ''}`}
       >
         <div className="flex h-16 items-center justify-between px-4">
           <div className="flex items-center gap-3">

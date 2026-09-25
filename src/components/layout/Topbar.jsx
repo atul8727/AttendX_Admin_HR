@@ -42,7 +42,7 @@ export default function Topbar() {
   }
 
   return (
-    <header className="sticky top-0 z-20 flex min-h-16 min-w-0 flex-wrap items-center gap-2 border-b border-primary/10 bg-app-surface/90 px-3 py-3 backdrop-blur sm:flex-nowrap sm:gap-3 lg:px-6">
+    <header className="sticky top-0 z-20 flex min-h-16 min-w-0 flex-wrap items-center gap-2 border-b border-primary/10 bg-app-surface/90 px-3 py-3 backdrop-blur print:hidden sm:flex-nowrap sm:gap-3 lg:px-6">
       <button
         className="grid h-10 w-10 shrink-0 place-items-center rounded-lg bg-primary/10 text-primary lg:hidden"
         onClick={toggleMobileSidebar}

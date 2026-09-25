@@ -4,12 +4,12 @@ export const MODULE_API_STATUS = {
   devices: true,
   attendanceOverrides: true,
   offices: false,
-  leaveRequests: false,
-  leaveTypes: false,
-  leaveBalances: false,
-  holidays: false,
+  leaveRequests: true,
+  leaveTypes: true,
+  leaveBalances: true,
+  holidays: true,
   attendance: false, // daily attendance records (dashboard/reports) abhi local hain
-  reports: false,
+  reports: true,
   settings: false,
   auditLogs: false
 }
