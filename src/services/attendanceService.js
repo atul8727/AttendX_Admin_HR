@@ -1,5 +1,5 @@
 import { delay, readStore, storeKeys } from './localStore.js'
 
+// Sirf Dashboard ka "Today's Attendance" abhi isse chalta hai (daily attendance API ready hone tak).
+// Overrides / correction ab store/api/attendanceOverridesApi.js se chalte hain.
 export const getAttendance = () => delay(readStore(storeKeys.attendance))
-export const getAttendanceDetail = (id) => delay(readStore(storeKeys.attendance).find((record) => record.id === id))
-export const createAttendanceCorrection = (payload) => delay({ id: `COR-${Date.now()}`, ...payload, status: 'Pending' })

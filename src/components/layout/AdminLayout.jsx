@@ -7,11 +7,11 @@ import Topbar from './Topbar.jsx'
 export default function AdminLayout() {
   const { collapsed } = useContext(SidebarContext)
   return (
-    <div className="min-h-screen bg-app-bg bg-[radial-gradient(circle_at_top_left,rgba(79,70,229,0.12),transparent_28%),radial-gradient(circle_at_bottom_right,rgba(13,148,136,0.10),transparent_30%)]">
+    <div className="min-h-screen w-full max-w-full overflow-x-hidden bg-app-bg bg-[radial-gradient(circle_at_top_left,rgba(79,70,229,0.12),transparent_28%),radial-gradient(circle_at_bottom_right,rgba(13,148,136,0.10),transparent_30%)]">
       <Sidebar />
-      <div className={`min-h-screen min-w-0 transition-all ${collapsed ? 'lg:pl-20' : 'lg:pl-72'}`}>
+      <div className={`min-h-screen min-w-0 max-w-full transition-all print:pl-0 ${collapsed ? 'lg:pl-20' : 'lg:pl-72'}`}>
         <Topbar />
-        <main className="min-w-0 px-3 py-4 sm:p-4 lg:p-6">
+        <main className="min-w-0 max-w-full px-3 py-4 print:p-0 sm:p-4 lg:p-6">
           <Outlet />
         </main>
       </div>
