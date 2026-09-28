@@ -1,35 +1,40 @@
 import { apiSlice } from '../apiSlice.js'
 
-function toTimeInput(value, fallback = '') {
-  if (!value) return fallback
+function toTimeInput(value) {
+  if (!value) return ''
   return String(value).slice(0, 5)
 }
 
 function normalizeStatus(status) {
-  if (!status) return 'Active'
+  if (!status) return ''
   return status.charAt(0).toUpperCase() + status.slice(1).toLowerCase()
 }
 
 function normalizeEmployee(employee = {}) {
-  const id = employee.employee_id ?? employee.id ?? employee.employee_code ?? employee.code
+  const apiId = employee.employee_id ?? employee.active_employee_id ?? employee.id
+  const id = apiId ?? employee.employee_code ?? employee.code
   const code = employee.employee_code ?? employee.code ?? id
 
   return {
     id: String(id),
+    apiId: apiId == null ? '' : String(apiId),
     code: String(code),
     name: employee.name || '',
     email: employee.email || '',
     phone: employee.phone || '',
-    role: employee.role || 'Employee',
-    department: employee.department || 'General',
-    office: employee.office || employee.office_name || 'Noida HQ',
-    expectedLogin: toTimeInput(employee.expected_login_time ?? employee.expectedLogin, '09:30'),
-    expectedLogout: toTimeInput(employee.expected_logout_time ?? employee.expectedLogout, '18:30'),
-    lateGraceMinutes: employee.late_grace_minutes ?? employee.lateGraceMinutes ?? 15,
+    role: employee.role || '',
+    department: employee.department || '',
+    officeSettingId: employee.office_setting_id != null ? String(employee.office_setting_id) : '',
+    officeName:
+      employee.office_name ??
+      employee.branch_name ??
+      employee.office?.office_name ??
+      employee.office?.name ??
+      (typeof employee.office === 'string' ? employee.office : ''),
+    expectedLogin: toTimeInput(employee.expected_login_time ?? employee.expectedLogin),
+    expectedLogout: toTimeInput(employee.expected_logout_time ?? employee.expectedLogout),
+    lateGraceMinutes: employee.late_grace_minutes ?? employee.lateGraceMinutes ?? null,
     status: normalizeStatus(employee.status),
-    wfh: employee.wfh || 'Enabled',
-    wfhLocation: employee.wfhLocation || { latitude: '', longitude: '', radius: 150 },
-    leaveBalance: employee.leaveBalance || { casual: 12, sick: 8, earned: 18 },
     joined: employee.joined || employee.created_at?.slice(0, 10) || '',
     createdAt: employee.created_at,
     updatedAt: employee.updated_at
@@ -64,7 +69,8 @@ function employeePayload(form) {
     phone: form.phone,
     expected_login_time: form.expectedLogin,
     expected_logout_time: form.expectedLogout,
-    late_grace_minutes: form.lateGraceMinutes ?? 15
+    late_grace_minutes: form.lateGraceMinutes === '' ? undefined : Number(form.lateGraceMinutes),
+    ...(form.officeSettingId ? { office_setting_id: Number(form.officeSettingId) } : {})
   }
 }
 
@@ -74,7 +80,7 @@ function updateEmployeePayload(form) {
     phone: form.phone,
     expected_login_time: form.expectedLogin,
     expected_logout_time: form.expectedLogout,
-    late_grace_minutes: form.lateGraceMinutes ?? 15
+    late_grace_minutes: form.lateGraceMinutes === '' ? undefined : Number(form.lateGraceMinutes)
   }
 }
 
@@ -137,6 +143,31 @@ export const employeesApi = apiSlice.injectEndpoints({
         { type: 'Employee', id: 'LIST' }
       ]
     }),
+    // GET /admin/employees/:id/office -> { data: null } agar office assign nahi hai
+    getEmployeeOffice: builder.query({
+      query: (id) => `/admin/employees/${id}/office`,
+      transformResponse: (response) => {
+        const office = response?.data
+        if (!office) return null
+        return {
+          officeSettingId: office.office_setting_id != null ? String(office.office_setting_id) : '',
+          officeName: office.office_name || ''
+        }
+      },
+      providesTags: (_result, _error, id) => [{ type: 'Employee', id: `OFFICE-${id}` }]
+    }),
+    // PUT /admin/employees/:id/office  body: { office_setting_id }
+    assignEmployeeOffice: builder.mutation({
+      query: ({ id, officeSettingId }) => ({
+        url: `/admin/employees/${id}/office`,
+        method: 'PUT',
+        body: { office_setting_id: Number(officeSettingId) }
+      }),
+      invalidatesTags: (_result, _error, { id }) => [
+        { type: 'Employee', id: `OFFICE-${id}` },
+        { type: 'Employee', id: 'LIST' }
+      ]
+    }),
     deleteEmployee: builder.mutation({
       query: (id) => ({
         url: `/admin/employees/${id}`,
@@ -153,5 +184,7 @@ export const {
   useAddEmployeeMutation,
   useUpdateEmployeeMutation,
   useUpdateEmployeeStatusMutation,
+  useGetEmployeeOfficeQuery,
+  useAssignEmployeeOfficeMutation,
   useDeleteEmployeeMutation
 } = employeesApi

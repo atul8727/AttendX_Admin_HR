@@ -2,7 +2,8 @@ import { lazy, Suspense } from 'react'
 import { Navigate, Outlet, Route, Routes, useLocation } from 'react-router-dom'
 import AdminLayout from '../components/layout/AdminLayout.jsx'
 import Loader from '../components/ui/Loader.jsx'
-import { getAuthToken } from '../store/apiSlice.js'
+// import { getAuthToken } from '../store/apiSlice.js'
+import { hasValidSession } from '../store/apiSlice.js'
 
 // import ki jagah lazy() — har module ab apna alag JS chunk banega,
 // aur tabhi download hoga jab woh route visit ho.
@@ -12,7 +13,8 @@ const EmployeeList = lazy(() => import('../modules/employees/EmployeeList.jsx'))
 const EmployeeForm = lazy(() => import('../modules/employees/EmployeeForm.jsx'))
 const EmployeeDetail = lazy(() => import('../modules/employees/EmployeeDetail.jsx'))
 const OfficeList = lazy(() => import('../modules/offices/OfficeList.jsx'))
-const OfficeForm = lazy(() => import('../modules/offices/OfficeForm.jsx'))
+// const OfficeForm = lazy(() => import('../modules/offices/OfficeForm.jsx'))
+const WfhList = lazy(() => import('../modules/wfh/WfhList.jsx'))
 const DeviceRequests = lazy(() => import('../modules/devices/DeviceRequests.jsx'))
 const LeaveRequests = lazy(() => import('../modules/leave/LeaveRequests.jsx'))
 const LeaveTypes = lazy(() => import('../modules/leave/LeaveTypes.jsx'))
@@ -21,12 +23,11 @@ const HolidayList = lazy(() => import('../modules/holidays/HolidayList.jsx'))
 const AttendanceList = lazy(() => import('../modules/attendance/AttendanceList.jsx'))
 const AttendanceCorrection = lazy(() => import('../modules/attendance/AttendanceCorrection.jsx'))
 const Reports = lazy(() => import('../modules/reports/Reports.jsx'))
-const Settings = lazy(() => import('../modules/settings/Settings.jsx'))
-const AuditLog = lazy(() => import('../modules/audit/AuditLog.jsx'))
 
 function ProtectedRoutes() {
   const location = useLocation()
-  if (!getAuthToken()) return <Navigate to="/login" replace state={{ from: location }} />
+  // if (!getAuthToken()) return <Navigate to="/login" replace state={{ from: location }} />
+  if (!hasValidSession()) return <Navigate to="/login" replace state={{ from: location }} />
   return <Outlet />
 }
 
@@ -44,7 +45,8 @@ export default function AppRoutes() {
             <Route path="employees/new" element={<EmployeeForm />} />
             <Route path="employees/:id" element={<EmployeeDetail />} />
             <Route path="offices" element={<OfficeList />} />
-            <Route path="offices/new" element={<OfficeForm />} />
+                        <Route path="wfh" element={<WfhList />} />
+            {/* <Route path="offices/new" element={<OfficeForm />} /> */}
             <Route path="devices" element={<DeviceRequests />} />
             <Route path="leave/requests" element={<LeaveRequests />} />
             <Route path="leave/types" element={<LeaveTypes />} />
@@ -53,8 +55,6 @@ export default function AppRoutes() {
             <Route path="attendance" element={<AttendanceList />} />
             <Route path="attendance/correction" element={<AttendanceCorrection />} />
             <Route path="reports" element={<Reports />} />
-            <Route path="settings" element={<Settings />} />
-            <Route path="audit" element={<AuditLog />} />
             <Route path="*" element={<Navigate to="/" replace />} />
           </Route>
         </Route>

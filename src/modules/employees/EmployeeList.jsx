@@ -11,6 +11,8 @@ import Select from '../../components/ui/Select.jsx'
 import Table from '../../components/ui/Table.jsx'
 import { useDebounce } from '../../hooks/useDebounce.js'
 import { useEmployee, useEmployeeList, useEmployeeMutations } from '../../hooks/useEmployees.js'
+import { useAssignEmployeeOfficeMutation, useGetEmployeeOfficeQuery } from '../../store/api/employeesApi.js'
+import { useGetOfficesQuery } from '../../store/api/officesApi.js'
 
 const emptyForm = {
   code: '',
@@ -20,7 +22,7 @@ const emptyForm = {
   phone: '',
   role: '',
   department: '',
-  office: 'Noida HQ',
+  officeSettingId: '',
   expectedLogin: '09:30',
   expectedLogout: '18:30',
   lateGraceMinutes: 15,
@@ -44,6 +46,17 @@ function DetailItem({ label, value }) {
   )
 }
 
+// List row mein branch dikhata hai. Agar list API office info nahi bhejti to us employee ka office alag se fetch karta hai
+// (RTK Query cache karta hai, isliye same employee ke liye dobara request nahi jati).
+function BranchCell({ employee, branchNameById }) {
+  const knownName = employee.officeName || branchNameById[employee.officeSettingId]
+  const { data: office, isFetching } = useGetEmployeeOfficeQuery(employee.id, { skip: Boolean(knownName) })
+
+  if (knownName) return knownName
+  if (isFetching) return <span className="text-app-muted">...</span>
+  return office?.officeName || branchNameById[office?.officeSettingId] || <span className="text-app-muted">Not assigned</span>
+}
+
 export default function EmployeeList() {
   const [search, setSearch] = useState('')
   const [status, setStatus] = useState('All')
@@ -65,13 +78,16 @@ export default function EmployeeList() {
     refetch: refetchEmployees
   } = useEmployeeList(listParams)
   const { addEmployee, updateEmployee, updateEmployeeStatus, addState, updateState } = useEmployeeMutations()
+  // NOTE: ye hook mutationError se PEHLE hona zaroori hai, warna assignState undefined-before-init crash deta hai
+  const [assignOffice, assignState] = useAssignEmployeeOfficeMutation()
   const [modalOpen, setModalOpen] = useState(false)
   const [viewingId, setViewingId] = useState(null)
   const [editingId, setEditingId] = useState(null)
   const [form, setForm] = useState(emptyForm)
   const { data: viewingEmployee, fetching: viewingLoading } = useEmployee(viewingId, { skip: !viewingId })
-  const mutationError = addState.error || updateState.error
-  const formError = mutationError?.data?.message || mutationError?.error || mutationError?.message || ''
+  const mutationError = addState.error || updateState.error || assignState.error
+  const formError =
+    mutationError?.data?.message || mutationError?.data?.error?.message || mutationError?.error || mutationError?.message || ''
   const queryError = error || ''
   const pagination = employeePagination || { page: 1, limit: 20, total: data.length, total_pages: 1 }
 
@@ -81,6 +97,23 @@ export default function EmployeeList() {
 
   const rows = useMemo(() => data || [], [data])
 
+  // Branches (offices) + employee ka current office
+  const { data: branches = [], isLoading: branchesLoading, isError: branchesError } = useGetOfficesQuery()
+  const branchNameById = useMemo(() => Object.fromEntries(branches.map((branch) => [branch.id, branch.name])), [branches])
+  const { data: editingOffice, isFetching: editingOfficeLoading } = useGetEmployeeOfficeQuery(editingId, { skip: !editingId })
+  const { data: viewingOffice } = useGetEmployeeOfficeQuery(viewingId, { skip: !viewingId })
+
+  // Form mein user ne kuch choose nahi kiya to edit mode mein employee ka current office dikhao
+  const selectedOfficeId = form.officeSettingId || editingOffice?.officeSettingId || ''
+  const branchOptions = useMemo(
+    () => [
+      { label: branchesLoading ? 'Loading branches...' : 'Select Branch', value: '' },
+      ...branches.map((branch) => ({ label: branch.name, value: branch.id }))
+    ],
+    [branches, branchesLoading]
+  )
+  const saving = addState.isLoading || updateState.isLoading || assignState.isLoading
+
   function openCreateModal() {
     setEditingId(null)
     setForm({ ...emptyForm, code: `EMP${String((pagination.total || data.length) + 1).padStart(3, '0')}` })
@@ -89,7 +122,7 @@ export default function EmployeeList() {
 
   function openEditModal(employee) {
     setEditingId(employee.id)
-    setForm({ ...emptyForm, ...employee })
+    setForm({ ...emptyForm, ...employee, officeSettingId: employee.officeSettingId || '' })
     setModalOpen(true)
   }
 
@@ -100,8 +133,15 @@ export default function EmployeeList() {
   async function handleSubmit(event) {
     event.preventDefault()
     try {
-      if (editingId) await updateEmployee(editingId, form)
-      else await addEmployee(form)
+      if (editingId) {
+        await updateEmployee(editingId, form)
+        // Office alag endpoint se assign hota hai, sirf tab jab badla ho
+        if (selectedOfficeId && selectedOfficeId !== editingOffice?.officeSettingId) {
+          await assignOffice({ id: editingId, officeSettingId: selectedOfficeId }).unwrap()
+        }
+      } else {
+        await addEmployee({ ...form, officeSettingId: selectedOfficeId })
+      }
       await refetchEmployees()
       setModalOpen(false)
     } catch (err) {
@@ -125,9 +165,9 @@ export default function EmployeeList() {
       <div className="flex flex-col justify-between gap-3 sm:flex-row sm:items-end">
         <div>
           <h1 className="text-xl font-black sm:text-2xl">Employee Management</h1>
-        <p className="text-sm text-app-muted">
- {pagination.total} employees - manage profiles, roles and attendance timing in one place.
-</p>
+          <p className="text-sm text-app-muted">
+            {pagination.total} employees - manage profiles, roles and attendance timing in one place.
+          </p>
         </div>
         <Button icon={FiPlus} onClick={openCreateModal} className="w-full sm:w-auto">
           Add Employee
@@ -171,6 +211,7 @@ export default function EmployeeList() {
               )
             },
             { key: 'code', header: 'Code' },
+            { key: 'branch', header: 'Branch', render: (row) => <BranchCell employee={row} branchNameById={branchNameById} /> },
             { key: 'phone', header: 'Phone' },
             { key: 'expectedLogin', header: 'Expected Login' },
             { key: 'expectedLogout', header: 'Expected Logout' },
@@ -183,21 +224,21 @@ export default function EmployeeList() {
                   <Button
                     variant="outline"
                     icon={FiEye}
+                    aria-label={`View ${row.name}`}
                     onClick={(event) => {
                       event.stopPropagation()
                       openViewModal(row)
                     }}
-                  >
-                  </Button>
+                  />
                   <Button
                     variant="info"
                     icon={FiEdit}
+                    aria-label={`Edit ${row.name}`}
                     onClick={(event) => {
                       event.stopPropagation()
                       openEditModal(row)
                     }}
-                  >
-                  </Button>
+                  />
                   <Button
                     variant={row.status === 'Active' ? 'danger' : 'success'}
                     icon={FiPower}
@@ -299,12 +340,25 @@ export default function EmployeeList() {
               value={form.lateGraceMinutes}
               onChange={(event) => setForm({ ...form, lateGraceMinutes: Number(event.target.value) })}
             />
+            <div>
+              <Select
+                label="Branch"
+                value={selectedOfficeId}
+                onChange={(event) => setForm({ ...form, officeSettingId: event.target.value })}
+                options={branchOptions}
+                disabled={branchesLoading || Boolean(editingId && editingOfficeLoading)}
+                required={!editingId}
+              />
+              {branchesError && <p className="mt-1 text-xs font-semibold text-danger">Branch list load nahi hui. Offices module/API check karo.</p>}
+            </div>
           </div>
           <div className="flex flex-col-reverse justify-end gap-2 sm:flex-row">
-              <Button type="button" variant="ghost" onClick={() => setModalOpen(false)} className="w-full sm:w-auto">
-                Cancel
-              </Button>
-            <Button type="submit" className="w-full sm:w-auto">{editingId ? 'Save Changes' : 'Create Employee'}</Button>
+            <Button type="button" variant="ghost" onClick={() => setModalOpen(false)} className="w-full sm:w-auto">
+              Cancel
+            </Button>
+            <Button type="submit" disabled={saving} className="w-full sm:w-auto">
+              {saving ? 'Saving...' : editingId ? 'Save Changes' : 'Create Employee'}
+            </Button>
           </div>
         </form>
       </Modal>
@@ -327,6 +381,14 @@ export default function EmployeeList() {
               <DetailItem label="Employee Code" value={viewingEmployee.code} />
               <DetailItem label="Email" value={viewingEmployee.email} />
               <DetailItem label="Phone" value={viewingEmployee.phone} />
+              <DetailItem
+                label="Branch"
+                value={
+                  viewingOffice === undefined
+                    ? 'Loading...'
+                    : viewingOffice?.officeName || branchNameById[viewingOffice?.officeSettingId] || 'Not assigned'
+                }
+              />
               <DetailItem label="Expected Login Time" value={viewingEmployee.expectedLogin} />
               <DetailItem label="Expected Logout Time" value={viewingEmployee.expectedLogout} />
               <DetailItem label="Late Grace Minutes" value={viewingEmployee.lateGraceMinutes} />

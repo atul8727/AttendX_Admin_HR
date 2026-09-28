@@ -1,10 +1,8 @@
-import { API_BASE_URL, getAuthToken } from '../store/apiSlice.js'
+import { API_BASE_URL, authorizedFetch } from '../store/apiSlice.js'
 
 async function fetchBlob(url) {
-  const token = getAuthToken()
-  const response = await fetch(url, {
-    headers: token ? { Authorization: `Bearer ${token}` } : {}
-  })
+  const response = await authorizedFetch(url)
+
   if (!response.ok) {
     let message = `Export failed (status ${response.status}).`
     try {
@@ -15,6 +13,7 @@ async function fetchBlob(url) {
     }
     throw new Error(message)
   }
+
   return response.blob()
 }
 

@@ -14,6 +14,15 @@ import { useGetEmployeesQuery } from '../../store/api/employeesApi.js'
 import { useGetDailyReportQuery, useGetLateReportQuery, useGetLeaveReportQuery, useGetMonthlyReportQuery } from '../../store/api/reportsApi.js'
 import { downloadCompanyExcelReport, downloadEmployeeExcelReport } from '../../services/reportExportService.js'
 
+// Local (device ke timezone) ke hisaab se YYYY-MM-DD.
+// toISOString() UTC deta hai, isliye India mein subah 5:30 se pehle kal ki date aa jati thi.
+function toLocalDateString(d = new Date()) {
+  const year = d.getFullYear()
+  const month = String(d.getMonth() + 1).padStart(2, '0')
+  const day = String(d.getDate()).padStart(2, '0')
+  return `${year}-${month}-${day}`
+}
+
 const NOW = new Date()
 const CURRENT_YEAR = NOW.getFullYear()
 const YEAR_OPTIONS = [CURRENT_YEAR - 1, CURRENT_YEAR, CURRENT_YEAR + 1].map((year) => ({ value: String(year), label: String(year) }))
@@ -22,16 +31,19 @@ const MONTH_OPTIONS = Array.from({ length: 12 }, (_, index) => ({
   label: new Date(2000, index, 1).toLocaleString('en-US', { month: 'long' })
 }))
 
+// Daily sabse pehle, Employee Report sabse aakhir mein
 const TABS = [
-  { key: 'employee', label: 'Employee Report', icon: FiUser },
   { key: 'daily', label: 'Daily', icon: FiCalendar },
   { key: 'monthly', label: 'Monthly', icon: FiPieChart },
   { key: 'late', label: 'Late', icon: FiClock },
-  { key: 'leave', label: 'Leave', icon: FiSun }
+  { key: 'leave', label: 'Leave', icon: FiSun },
+  { key: 'employee', label: 'Employee Report', icon: FiUser }
 ]
 
+const DEFAULT_TAB = 'daily'
+
 function getApiErrorMessage(error) {
-  return error?.data?.message || error?.error || error?.message || 'Something went wrong.'
+  return error?.data?.message || error?.data?.error?.message || error?.error || error?.message || 'Something went wrong.'
 }
 
 function monthLabel(month) {
@@ -54,7 +66,7 @@ function statusLabel(raw) {
 }
 
 export default function Reports() {
-  const [activeTab, setActiveTab] = useState('employee')
+  const [activeTab, setActiveTab] = useState(DEFAULT_TAB)
   const [year, setYear] = useState(String(CURRENT_YEAR))
   const [month, setMonth] = useState(String(NOW.getMonth() + 1))
   const [exporting, setExporting] = useState(false)
@@ -115,11 +127,11 @@ export default function Reports() {
         })}
       </div>
 
-      {activeTab === 'employee' && <EmployeeReportTab year={year} month={month} />}
       {activeTab === 'daily' && <DailyReportTab />}
       {activeTab === 'monthly' && <MonthlyReportTab year={year} month={month} />}
       {activeTab === 'late' && <LateReportTab year={year} month={month} />}
       {activeTab === 'leave' && <LeaveReportTab year={year} month={month} />}
+      {activeTab === 'employee' && <EmployeeReportTab year={year} month={month} />}
     </div>
   )
 }
@@ -127,14 +139,16 @@ export default function Reports() {
 /* ------------------------------ Daily tab ------------------------------ */
 
 function DailyReportTab() {
-  const [date, setDate] = useState(NOW.toISOString().slice(0, 10))
+  const [date, setDate] = useState(() => toLocalDateString())
   const [page, setPage] = useState(1)
   const limit = 20
   const { data, isLoading, isFetching, isError, error } = useGetDailyReportQuery({ date, page, limit })
   const rows = data?.items || []
   const pagination = data?.pagination || { page: 1, total_pages: 1, total: rows.length }
 
-  useEffect(() => setPage(1), [date])
+  useEffect(() => {
+    setPage(1)
+  }, [date])
 
   return (
     <Card className="space-y-4">
@@ -251,7 +265,9 @@ function LateReportTab({ year, month }) {
   const rows = data?.items || []
   const pagination = data?.pagination || { page: 1, total_pages: 1, total: rows.length }
 
-  useEffect(() => setPage(1), [year, month])
+  useEffect(() => {
+    setPage(1)
+  }, [year, month])
 
   return (
     <Card className="space-y-4">
@@ -314,7 +330,9 @@ function LeaveReportTab({ year, month }) {
   const rows = data?.items || []
   const pagination = data?.pagination || { page: 1, total_pages: 1, total: rows.length }
 
-  useEffect(() => setPage(1), [year, month])
+  useEffect(() => {
+    setPage(1)
+  }, [year, month])
 
   return (
     <Card className="space-y-4">
@@ -370,9 +388,9 @@ function LeaveReportTab({ year, month }) {
 }
 
 /* --------------------------- Employee Report tab --------------------------- */
-// Yahi tumhara main ask hai: employee search karo (naam / employee ID), aur
-// uska poora month ka report (summary + late + leave + kisi ek din ka detail)
-// ek jagah dikhe, print bhi ho sake aur Excel me bhi download ho.
+// Employee search karo (naam / employee ID), aur uska poora month ka report
+// (summary + late + leave + kisi ek din ka detail) ek jagah dikhe,
+// print bhi ho sake aur Excel me bhi download ho.
 
 function EmployeeReportTab({ year, month }) {
   const [search, setSearch] = useState('')
@@ -509,7 +527,7 @@ function EmployeeReportTab({ year, month }) {
       {!selectedEmployee && (
         <Card>
           <p className="text-center text-sm text-app-muted">
-            Upar employee search karo (naam ya employee ID) uska poora {monthLabel(month)} {year} ka report dekhne ke liye.
+            Search for an employee above (by name or employee ID) to view their complete {monthLabel(month)} {year} report.
           </p>
         </Card>
       )}
