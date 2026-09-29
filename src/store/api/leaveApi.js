@@ -193,31 +193,6 @@ export const leaveApi = apiSlice.injectEndpoints({
       ]
     }),
 
-    // Fetches EVERY balance for a year (all pages) so the UI can build per-type summaries and filter locally.
-    // It shares the 'LeaveBalance' tag, so it refreshes automatically after any allocate / update / approve action.
-    getAllLeaveBalances: builder.query({
-      async queryFn({ year = '' } = {}, _api, _extraOptions, baseQuery) {
-        const pageSize = 100
-        const items = []
-        for (let page = 1; page <= 200; page += 1) {
-          const result = await baseQuery({
-            url: '/admin/leave/balances',
-            params: { page, limit: pageSize, ...(year ? { year } : {}) }
-          })
-          if (result.error) return { error: result.error }
-          const pageItems = unwrapCollection(result.data).map(normalizeLeaveBalance)
-          items.push(...pageItems)
-          const totalPages = unwrapData(result.data)?.pagination?.total_pages
-          if (pageItems.length === 0 || (totalPages ? page >= totalPages : pageItems.length < pageSize)) break
-        }
-        return { data: items }
-      },
-      providesTags: (result) => [
-        { type: 'LeaveBalance', id: 'LIST' },
-        ...(result || []).map((item) => ({ type: 'LeaveBalance', id: item.id }))
-      ]
-    }),
-
     // POST {{base_url}}/admin/leave/balances  body: { employee_id, leave_type_id, year }
     addLeaveBalance: builder.mutation({
       query: ({ employeeId, leaveTypeId, year }) => ({
@@ -312,7 +287,6 @@ export const {
   useUpdateLeaveTypeMutation,
   useUpdateLeaveTypeStatusMutation,
   useGetLeaveBalancesQuery,
-  useGetAllLeaveBalancesQuery,
   useAddLeaveBalanceMutation,
   useUpdateLeaveBalanceMutation,
   useGetLeaveRequestsQuery,

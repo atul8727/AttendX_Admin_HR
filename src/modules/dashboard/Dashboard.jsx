@@ -7,6 +7,7 @@ import EmptyState from '../../components/ui/EmptyState.jsx'
 import Loader from '../../components/ui/Loader.jsx'
 import { ATTENDANCE_STATUS_META, getAttendanceStatusMeta } from '../../constants/dashboard.js'
 import { useGetDashboardQuery } from '../../store/api/dashboardApi.js'
+import TodayAttendanceLog from './components/TodayAttendanceLog.jsx'
 
 const REFRESH_INTERVAL_MS = 60_000
 
@@ -273,6 +274,8 @@ export default function Dashboard() {
           </Card>
         </div>
       </div>
+
+      <TodayAttendanceLog date={data.date} refreshMs={REFRESH_INTERVAL_MS} />
     </div>
   )
 }
