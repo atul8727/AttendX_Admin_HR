@@ -6,9 +6,8 @@ import {
   FiFileText,
   FiHome,
   FiMapPin,
-  FiSettings,
-  FiShield,
-  FiUsers
+  FiUsers,
+  FiMonitor
 } from 'react-icons/fi'
 
 export const navGroups = [
@@ -17,24 +16,18 @@ export const navGroups = [
     items: [
       { label: 'Dashboard', path: '/', icon: FiHome },
       { label: 'Employees', path: '/employees', icon: FiUsers },
-      // { label: 'Offices', path: '/offices', icon: FiMapPin },
-      { label: 'Devices', path: '/devices', icon: FiCpu, }
+      { label: 'Work From Home', path: '/wfh', icon: FiMonitor },
+      { label: 'Offices', path: '/offices', icon: FiMapPin },
+      { label: 'Devices', path: '/devices', icon: FiCpu }
     ]
   },
   {
     label: 'Operations',
     items: [
-      { label: 'Leave', path: '/leave/requests', icon: FiCalendar, },
+      { label: 'Leave', path: '/leave/requests', icon: FiCalendar },
       { label: 'Holidays', path: '/holidays', icon: FiClipboard },
-      { label: 'Attendance', path: '/attendance', icon: FiActivity },
-      { label: 'Reports', path: '/reports', icon: FiFileText }
-    ]
-  },
-  {
-    label: 'System',
-    items: [
-      { label: 'Settings', path: '/settings', icon: FiSettings },
-      { label: 'Audit Log', path: '/audit', icon: FiShield }
+      { label: 'Attendance Overview', path: '/attendance', icon: FiActivity },
+      { label: 'Attendance Report', path: '/reports', icon: FiFileText }
     ]
   }
 ]

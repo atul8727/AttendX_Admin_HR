@@ -40,7 +40,7 @@ function EmployeeCell({ employeeId }) {
   )
 }
 
-function StatCard({ icon: Icon, label, value, tone }) {
+function StatCard({ label, value, tone }) {
   const tones = {
     primary: 'bg-primary/10 text-primary',
     danger: 'bg-danger/10 text-danger',
@@ -50,7 +50,6 @@ function StatCard({ icon: Icon, label, value, tone }) {
   return (
     <div className="flex items-center gap-3 rounded-lg border border-primary/10 bg-app-surface p-4 shadow-soft ring-1 ring-white/40 dark:ring-white/5">
       <div className={`grid h-11 w-11 shrink-0 place-items-center rounded-lg ${tones[tone] || tones.primary}`}>
-        <Icon className="h-5 w-5" />
       </div>
       <div className="min-w-0">
         <p className="text-xl font-black leading-tight text-app-text">{value}</p>

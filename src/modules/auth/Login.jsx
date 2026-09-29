@@ -5,7 +5,9 @@ import Button from '../../components/ui/Button.jsx'
 import Input from '../../components/ui/Input.jsx'
 import logo from '../../assets/logo.svg'
 import { useAuth } from '../../hooks/useAuth.js'
-import { getAuthToken } from '../../store/apiSlice.js'
+// import { getAuthToken } from '../../store/apiSlice.js'
+import { hasValidSession } from '../../store/apiSlice.js'
+import { notify } from '../../lib/notify.js'
 
 const initialForm = {
   login: '',
@@ -15,10 +17,11 @@ const initialForm = {
 export default function Login() {
   const navigate = useNavigate()
   const [form, setForm] = useState(initialForm)
-  const { login, isLoading, isError, errorMessage } = useAuth()
+  const { login, isLoading, errorMessage } = useAuth()
 
   useEffect(() => {
-    if (getAuthToken()) navigate('/', { replace: true })
+    // if (getAuthToken()) navigate('/', { replace: true })
+    if (hasValidSession()) navigate('/', { replace: true })
   }, [navigate])
 
   async function handleSubmit(event) {
@@ -26,8 +29,8 @@ export default function Login() {
     try {
       await login(form)
       navigate('/', { replace: true })
-    } catch (err) {
-      void err
+    } catch {
+      notify.error(errorMessage, { id: 'login-error' })
     }
   }
 
@@ -51,12 +54,6 @@ export default function Login() {
         {/* Card */}
         <section className="rounded-2xl border border-primary/15 bg-app-surface p-6 shadow-soft ring-1 ring-white/40 backdrop-blur-sm sm:p-8 dark:ring-white/5">
           <form className="space-y-5" onSubmit={handleSubmit}>
-            {isError && (
-              <p className="rounded-lg border border-danger/20 bg-danger/10 p-3 text-center text-sm font-semibold text-danger">
-                {errorMessage}
-              </p>
-            )}
-
             <div className="relative">
               <Input
                 label="Login"

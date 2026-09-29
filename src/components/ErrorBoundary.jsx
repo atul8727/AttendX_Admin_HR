@@ -4,22 +4,28 @@ import Button from './ui/Button.jsx'
 class ErrorBoundary extends Component {
   constructor(props) {
     super(props)
-    this.state = { hasError: false, error: null }
+
+    this.state = {
+      hasError: false,
+      error: null,
+    }
   }
 
-  // Jab bhi child tree me error aaye, React ye method call karta hai
-  // taaki hum state update karke fallback UI dikha sakein.
+  // React calls this method when an error occurs in the child component tree.
+  // It updates the state so the fallback UI can be displayed.
   static getDerivedStateFromError(error) {
-    return { hasError: true, error }
-  }
-
-  // Yahan error ko log karte hain (console / monitoring service jaise Sentry).
-  componentDidCatch(error, errorInfo) {
-    console.error('ErrorBoundary caught an error:', error, errorInfo)
+    return {
+      hasError: true,
+      error,
+    }
   }
 
   handleReset = () => {
-    this.setState({ hasError: false, error: null })
+    this.setState({
+      hasError: false,
+      error: null,
+    })
+
     window.location.href = '/'
   }
 
@@ -29,13 +35,17 @@ class ErrorBoundary extends Component {
         <div className="grid min-h-screen place-items-center bg-app-bg px-4">
           <div className="max-w-md text-center">
             <h1 className="mb-2 text-xl font-semibold text-app-text">
-              Kuch galat ho gaya
+              Something went wrong
             </h1>
+
             <p className="mb-6 text-sm text-app-text/70">
-              Is page ko load karte waqt error aayi. Dashboard par wapas jaane
-              ki koshish karo.
+              There was an error while loading this page. Please try going
+              back to the dashboard.
             </p>
-            <Button onClick={this.handleReset}>Dashboard par jaao</Button>
+
+            <Button onClick={this.handleReset}>
+              Go to Dashboard
+            </Button>
           </div>
         </div>
       )

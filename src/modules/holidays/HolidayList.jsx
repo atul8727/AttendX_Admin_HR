@@ -40,7 +40,12 @@ function formatDisplayDate(value) {
 }
 
 function getApiErrorMessage(error) {
-  return error?.data?.message || error?.error || error?.message || ''
+  const message = error?.data?.message || error?.error || error?.message || ''
+  if (message) return message
+  if (error?.status === 409) {
+    return 'A holiday already exists on this date. Please choose a different date or edit the existing holiday.'
+  }
+  return ''
 }
 
 export default function HolidayList() {
@@ -58,6 +63,7 @@ export default function HolidayList() {
   const [editingId, setEditingId] = useState(null)
   const [form, setForm] = useState(emptyForm)
   const [deletingHoliday, setDeletingHoliday] = useState(null)
+  const [localError, setLocalError] = useState('')
 
   useEffect(() => {
     setPage(1)
@@ -80,15 +86,21 @@ export default function HolidayList() {
   }, [holidays])
 
   const mutationError = addState.error || updateState.error
-  const formError = getApiErrorMessage(mutationError)
+  const formError = localError || getApiErrorMessage(mutationError)
 
   function openCreateModal() {
+    setLocalError('')
+    addState.reset()
+    updateState.reset()
     setEditingId(null)
     setForm(emptyForm)
     setModalOpen(true)
   }
 
   function openEditModal(holiday) {
+    setLocalError('')
+    addState.reset()
+    updateState.reset()
     setEditingId(holiday.id)
     setForm({
       date: holiday.date,
@@ -101,6 +113,14 @@ export default function HolidayList() {
 
   async function handleSubmit(event) {
     event.preventDefault()
+    setLocalError('')
+
+    const duplicate = holidays.find((holiday) => holiday.date === form.date && holiday.id !== editingId)
+    if (duplicate) {
+      setLocalError(`"${duplicate.name}" is already added on ${formatDisplayDate(duplicate.date)}. Choose another date or edit that holiday.`)
+      return
+    }
+
     try {
       if (editingId) await updateHoliday({ id: editingId, ...form }).unwrap()
       else await addHoliday(form).unwrap()
