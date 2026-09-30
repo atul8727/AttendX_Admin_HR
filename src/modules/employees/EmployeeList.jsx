@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import { FiEdit, FiEye, FiPlus, FiPower } from 'react-icons/fi'
 import Avatar from '../../components/ui/Avatar.jsx'
 import Badge from '../../components/ui/Badge.jsx'
@@ -11,6 +12,8 @@ import Select from '../../components/ui/Select.jsx'
 import Table from '../../components/ui/Table.jsx'
 import { useDebounce } from '../../hooks/useDebounce.js'
 import { useEmployee, useEmployeeList, useEmployeeMutations } from '../../hooks/useEmployees.js'
+import { getApiErrorMessage } from '../../lib/apiError.js'
+import { useFormatters } from '../../lib/format.js'
 import { useAssignEmployeeOfficeMutation, useGetEmployeeOfficeQuery } from '../../store/api/employeesApi.js'
 import { useGetOfficesQuery } from '../../store/api/officesApi.js'
 
@@ -29,14 +32,6 @@ const emptyForm = {
   status: 'Active'
 }
 
-function formatDateTime(value) {
-  if (!value) return '-'
-  return new Intl.DateTimeFormat('en-IN', {
-    dateStyle: 'medium',
-    timeStyle: 'short'
-  }).format(new Date(value))
-}
-
 function DetailItem({ label, value }) {
   return (
     <div className="rounded-lg border border-primary/10 bg-app-bg p-3">
@@ -49,15 +44,19 @@ function DetailItem({ label, value }) {
 // List row mein branch dikhata hai. Agar list API office info nahi bhejti to us employee ka office alag se fetch karta hai
 // (RTK Query cache karta hai, isliye same employee ke liye dobara request nahi jati).
 function BranchCell({ employee, branchNameById }) {
+  const { t } = useTranslation('employees')
   const knownName = employee.officeName || branchNameById[employee.officeSettingId]
   const { data: office, isFetching } = useGetEmployeeOfficeQuery(employee.id, { skip: Boolean(knownName) })
 
   if (knownName) return knownName
   if (isFetching) return <span className="text-app-muted">...</span>
-  return office?.officeName || branchNameById[office?.officeSettingId] || <span className="text-app-muted">Not assigned</span>
+  return office?.officeName || branchNameById[office?.officeSettingId] || <span className="text-app-muted">{t('list.notAssigned')}</span>
 }
 
 export default function EmployeeList() {
+  const { t } = useTranslation('employees')
+  const fmt = useFormatters()
+  const formatDateTime = (value) => (value ? fmt.dateTime(value) : '-')
   const [search, setSearch] = useState('')
   const [status, setStatus] = useState('All')
   const [page, setPage] = useState(1)
@@ -86,8 +85,7 @@ export default function EmployeeList() {
   const [form, setForm] = useState(emptyForm)
   const { data: viewingEmployee, fetching: viewingLoading } = useEmployee(viewingId, { skip: !viewingId })
   const mutationError = addState.error || updateState.error || assignState.error
-  const formError =
-    mutationError?.data?.message || mutationError?.data?.error?.message || mutationError?.error || mutationError?.message || ''
+  const formError = mutationError ? getApiErrorMessage(mutationError) : ''
   const queryError = error || ''
   const pagination = employeePagination || { page: 1, limit: 20, total: data.length, total_pages: 1 }
 
@@ -107,10 +105,10 @@ export default function EmployeeList() {
   const selectedOfficeId = form.officeSettingId || editingOffice?.officeSettingId || ''
   const branchOptions = useMemo(
     () => [
-      { label: branchesLoading ? 'Loading branches...' : 'Select Branch', value: '' },
+      { label: branchesLoading ? t('form.loadingBranches') : t('form.selectBranch'), value: '' },
       ...branches.map((branch) => ({ label: branch.name, value: branch.id }))
     ],
-    [branches, branchesLoading]
+    [branches, branchesLoading, t]
   )
   const saving = addState.isLoading || updateState.isLoading || assignState.isLoading
 
@@ -164,20 +162,18 @@ export default function EmployeeList() {
     <div className="space-y-6">
       <div className="flex flex-col justify-between gap-3 sm:flex-row sm:items-end">
         <div>
-          <h1 className="text-xl font-black sm:text-2xl">Employee Management</h1>
-          <p className="text-sm text-app-muted">
-            {pagination.total} employees - manage profiles, roles and attendance timing in one place.
-          </p>
+          <h1 className="text-xl font-black sm:text-2xl">{t('list.title')}</h1>
+          <p className="text-sm text-app-muted">{t('list.subtitle', { count: pagination.total })}</p>
         </div>
         <Button icon={FiPlus} onClick={openCreateModal} className="w-full sm:w-auto">
-          Add Employee
+          {t('list.add')}
         </Button>
       </div>
 
       <Card>
         <div className="mb-4 grid gap-3 lg:grid-cols-[1fr_180px]">
           <Input
-            placeholder="Search by name, code, email, or phone..."
+            placeholder={t('list.searchPlaceholder')}
             value={search}
             onChange={(event) => setSearch(event.target.value)}
           />
@@ -185,21 +181,21 @@ export default function EmployeeList() {
             value={status}
             onChange={(event) => setStatus(event.target.value)}
             options={[
-              { label: 'All Status', value: 'All' },
-              { label: 'Active', value: 'Active' },
-              { label: 'Inactive', value: 'Inactive' }
+              { label: t('list.allStatus'), value: 'All' },
+              { label: t('status:active'), value: 'Active' },
+              { label: t('status:inactive'), value: 'Inactive' }
             ]}
           />
         </div>
         {isError && <p className="mb-3 rounded-lg bg-danger/10 p-3 text-sm font-semibold text-danger">{queryError}</p>}
-        {isFetching && !isLoading && <p className="mb-3 text-sm font-semibold text-app-muted">Refreshing employees...</p>}
+        {isFetching && !isLoading && <p className="mb-3 text-sm font-semibold text-app-muted">{t('list.refreshing')}</p>}
         <Table
           rows={rows}
           onRowClick={openViewModal}
           columns={[
             {
               key: 'name',
-              header: 'Employee',
+              header: t('list.columns.employee'),
               render: (row) => (
                 <div className="flex min-w-0 items-center gap-3">
                   <Avatar name={row.name} />
@@ -210,21 +206,21 @@ export default function EmployeeList() {
                 </div>
               )
             },
-            { key: 'code', header: 'Code' },
-            { key: 'branch', header: 'Branch', render: (row) => <BranchCell employee={row} branchNameById={branchNameById} /> },
-            { key: 'phone', header: 'Phone' },
-            { key: 'expectedLogin', header: 'Expected Login' },
-            { key: 'expectedLogout', header: 'Expected Logout' },
-            { key: 'status', header: 'Status', render: (row) => <Badge status={row.status} /> },
+            { key: 'code', header: t('list.columns.code') },
+            { key: 'branch', header: t('list.columns.branch'), render: (row) => <BranchCell employee={row} branchNameById={branchNameById} /> },
+            { key: 'phone', header: t('list.columns.phone') },
+            { key: 'expectedLogin', header: t('list.columns.expectedLogin') },
+            { key: 'expectedLogout', header: t('list.columns.expectedLogout') },
+            { key: 'status', header: t('list.columns.status'), render: (row) => <Badge status={row.status} /> },
             {
               key: 'actions',
-              header: 'Actions',
+              header: t('list.columns.actions'),
               render: (row) => (
                 <div className="flex flex-wrap gap-2">
                   <Button
                     variant="outline"
                     icon={FiEye}
-                    aria-label={`View ${row.name}`}
+                    aria-label={t('list.viewAria', { name: row.name })}
                     onClick={(event) => {
                       event.stopPropagation()
                       openViewModal(row)
@@ -233,7 +229,7 @@ export default function EmployeeList() {
                   <Button
                     variant="info"
                     icon={FiEdit}
-                    aria-label={`Edit ${row.name}`}
+                    aria-label={t('list.editAria', { name: row.name })}
                     onClick={(event) => {
                       event.stopPropagation()
                       openEditModal(row)
@@ -247,7 +243,7 @@ export default function EmployeeList() {
                       handleToggle(row)
                     }}
                   >
-                    {row.status === 'Active' ? 'Deactivate' : 'Activate'}
+                    {row.status === 'Active' ? t('list.deactivate') : t('list.activate')}
                   </Button>
                 </div>
               )
@@ -256,29 +252,29 @@ export default function EmployeeList() {
         />
         <div className="mt-4 flex flex-col gap-3 text-sm text-app-muted sm:flex-row sm:items-center sm:justify-between">
           <span>
-            Page {pagination.page} of {pagination.total_pages} - Showing {rows.length} of {pagination.total}
+            {t('common:pagination.summary', { page: pagination.page, totalPages: pagination.total_pages, shown: rows.length, total: pagination.total })}
           </span>
           <div className="flex flex-wrap gap-2">
             <Button variant="ghost" disabled={page <= 1 || isFetching} onClick={() => setPage((current) => Math.max(1, current - 1))}>
-              Previous
+              {t('common:actions.previous')}
             </Button>
             <Button
               variant="ghost"
               disabled={page >= pagination.total_pages || isFetching}
               onClick={() => setPage((current) => current + 1)}
             >
-              Next
+              {t('common:actions.next')}
             </Button>
           </div>
         </div>
       </Card>
 
-      <Modal open={modalOpen} title={editingId ? 'Edit Employee' : 'Add Employee'} onClose={() => setModalOpen(false)} className="max-w-3xl">
+      <Modal open={modalOpen} title={editingId ? t('form.editTitle') : t('form.addTitle')} onClose={() => setModalOpen(false)} className="max-w-3xl">
         <form className="space-y-4" onSubmit={handleSubmit}>
           {formError && <p className="rounded-lg bg-danger/10 p-3 text-sm font-semibold text-danger">{formError}</p>}
           <div className="grid gap-4 md:grid-cols-2">
             <Input
-              label="Employee Code"
+              label={t('form.code')}
               placeholder="EMP002"
               value={form.code}
               onChange={(event) => setForm({ ...form, code: event.target.value })}
@@ -286,14 +282,14 @@ export default function EmployeeList() {
               required
             />
             <Input
-              label="Name"
+              label={t('form.name')}
               placeholder="Gulshan Kumar"
               value={form.name}
               onChange={(event) => setForm({ ...form, name: event.target.value })}
               required
             />
             <Input
-              label="Email"
+              label={t('form.email')}
               type="email"
               placeholder="gulshandev524@gmail.com"
               value={form.email}
@@ -303,7 +299,7 @@ export default function EmployeeList() {
             />
             {!editingId && (
               <Input
-                label="Password"
+                label={t('form.password')}
                 type="password"
                 placeholder="gk@123"
                 value={form.password}
@@ -312,58 +308,59 @@ export default function EmployeeList() {
               />
             )}
             <Input
-              label="Phone"
+              label={t('form.phone')}
               placeholder="73939391450"
               value={form.phone}
               onChange={(event) => setForm({ ...form, phone: event.target.value })}
               required
             />
             <Input
-              label="Expected Login"
+              label={t('form.expectedLogin')}
               type="time"
               placeholder="10:00"
               value={form.expectedLogin}
               onChange={(event) => setForm({ ...form, expectedLogin: event.target.value })}
             />
             <Input
-              label="Expected Logout"
+              label={t('form.expectedLogout')}
               type="time"
               placeholder="19:00"
               value={form.expectedLogout}
               onChange={(event) => setForm({ ...form, expectedLogout: event.target.value })}
             />
-            <Input
-              label="Late Grace Minutes"
+            {/* Late Grace Minutes is temporarily hidden; retain the form state and API contract. */}
+            {/* <Input
+              label={t('form.lateGrace')}
               type="number"
               min="0"
               placeholder="15"
               value={form.lateGraceMinutes}
               onChange={(event) => setForm({ ...form, lateGraceMinutes: Number(event.target.value) })}
-            />
+            /> */}
             <div>
               <Select
-                label="Branch"
+                label={t('form.branch')}
                 value={selectedOfficeId}
                 onChange={(event) => setForm({ ...form, officeSettingId: event.target.value })}
                 options={branchOptions}
                 disabled={branchesLoading || Boolean(editingId && editingOfficeLoading)}
                 required={!editingId}
               />
-              {branchesError && <p className="mt-1 text-xs font-semibold text-danger">Branch list load nahi hui. Offices module/API check karo.</p>}
+              {branchesError && <p className="mt-1 text-xs font-semibold text-danger">{t('form.branchLoadError')}</p>}
             </div>
           </div>
           <div className="flex flex-col-reverse justify-end gap-2 sm:flex-row">
             <Button type="button" variant="ghost" onClick={() => setModalOpen(false)} className="w-full sm:w-auto">
-              Cancel
+              {t('common:actions.cancel')}
             </Button>
             <Button type="submit" disabled={saving} className="w-full sm:w-auto">
-              {saving ? 'Saving...' : editingId ? 'Save Changes' : 'Create Employee'}
+              {saving ? t('form.saving') : editingId ? t('form.saveChanges') : t('form.create')}
             </Button>
           </div>
         </form>
       </Modal>
 
-      <Modal open={Boolean(viewingId)} title="Employee Details" onClose={() => setViewingId(null)} className="max-w-3xl">
+      <Modal open={Boolean(viewingId)} title={t('view.title')} onClose={() => setViewingId(null)} className="max-w-3xl">
         {viewingLoading || !viewingEmployee ? (
           <Loader />
         ) : (
@@ -377,28 +374,29 @@ export default function EmployeeList() {
               <Badge status={viewingEmployee.status} />
             </div>
             <div className="grid gap-3 md:grid-cols-2">
-              <DetailItem label="Employee ID" value={viewingEmployee.id} />
-              <DetailItem label="Employee Code" value={viewingEmployee.code} />
-              <DetailItem label="Email" value={viewingEmployee.email} />
-              <DetailItem label="Phone" value={viewingEmployee.phone} />
+              <DetailItem label={t('fields.id')} value={viewingEmployee.id} />
+              <DetailItem label={t('fields.code')} value={viewingEmployee.code} />
+              <DetailItem label={t('fields.email')} value={viewingEmployee.email} />
+              <DetailItem label={t('fields.phone')} value={viewingEmployee.phone} />
               <DetailItem
-                label="Branch"
+                label={t('fields.branch')}
                 value={
                   viewingOffice === undefined
-                    ? 'Loading...'
-                    : viewingOffice?.officeName || branchNameById[viewingOffice?.officeSettingId] || 'Not assigned'
+                    ? t('common:actions.loading')
+                    : viewingOffice?.officeName || branchNameById[viewingOffice?.officeSettingId] || t('list.notAssigned')
                 }
               />
-              <DetailItem label="Expected Login Time" value={viewingEmployee.expectedLogin} />
-              <DetailItem label="Expected Logout Time" value={viewingEmployee.expectedLogout} />
-              <DetailItem label="Late Grace Minutes" value={viewingEmployee.lateGraceMinutes} />
-              <DetailItem label="Status" value={viewingEmployee.status} />
-              <DetailItem label="Created At" value={formatDateTime(viewingEmployee.createdAt)} />
-              <DetailItem label="Updated At" value={formatDateTime(viewingEmployee.updatedAt)} />
+              <DetailItem label={t('fields.expectedLoginTime')} value={viewingEmployee.expectedLogin} />
+              <DetailItem label={t('fields.expectedLogoutTime')} value={viewingEmployee.expectedLogout} />
+              {/* Late Grace Minutes is temporarily hidden. */}
+              {/* <DetailItem label={t('fields.lateGrace')} value={viewingEmployee.lateGraceMinutes} /> */}
+              <DetailItem label={t('fields.status')} value={<Badge status={viewingEmployee.status} />} />
+              <DetailItem label={t('fields.createdAt')} value={formatDateTime(viewingEmployee.createdAt)} />
+              <DetailItem label={t('fields.updatedAt')} value={formatDateTime(viewingEmployee.updatedAt)} />
             </div>
             <div className="flex flex-col-reverse justify-end gap-2 sm:flex-row">
               <Button type="button" variant="ghost" onClick={() => setViewingId(null)} className="w-full sm:w-auto">
-                Close
+                {t('common:actions.close')}
               </Button>
               <Button
                 type="button"
@@ -410,7 +408,7 @@ export default function EmployeeList() {
                   setViewingId(null)
                 }}
               >
-                Edit
+                {t('actions.edit')}
               </Button>
             </div>
           </div>

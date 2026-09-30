@@ -1,18 +1,14 @@
 import { Link } from 'react-router-dom'
+import { useTranslation } from 'react-i18next'
 import Avatar from '../../../components/ui/Avatar.jsx'
 import Badge from '../../../components/ui/Badge.jsx'
 import Card from '../../../components/ui/Card.jsx'
 import Loader from '../../../components/ui/Loader.jsx'
 import Table from '../../../components/ui/Table.jsx'
+import { useFormatters } from '../../../lib/format.js'
 import { useGetDailyReportQuery } from '../../../store/api/reportsApi.js'
 
 const LOG_SIZE = 6
-
-function formatTime(value) {
-  if (!value) return '-'
-  const date = new Date(value)
-  return Number.isNaN(date.getTime()) ? String(value).slice(0, 5) : date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
-}
 
 // "HALF_DAY" -> "Half Day" (matches the labels Badge already knows).
 function toLabel(status) {
@@ -21,6 +17,13 @@ function toLabel(status) {
 }
 
 export default function TodayAttendanceLog({ date, refreshMs }) {
+  const { t } = useTranslation('dashboard')
+  const fmt = useFormatters()
+  const formatTime = (value) => {
+    if (!value) return '-'
+    const parsed = new Date(value)
+    return Number.isNaN(parsed.getTime()) ? String(value).slice(0, 5) : fmt.time(parsed)
+  }
   const { data, isLoading, isError } = useGetDailyReportQuery(
     { date, page: 1, limit: LOG_SIZE },
     { skip: !date, pollingInterval: refreshMs, skipPollingIfUnfocused: true }
@@ -32,27 +35,27 @@ export default function TodayAttendanceLog({ date, refreshMs }) {
     <Card>
       <div className="mb-4 flex items-center justify-between gap-3">
         <div>
-          <h2 className="text-lg font-bold">Attendance Log</h2>
+          <h2 className="text-lg font-bold">{t('log.title')}</h2>
           <p className="text-xs text-app-muted">
-            {total > rows.length ? `Showing ${rows.length} of ${total} records today.` : 'Today\'s attendance records.'}
+            {total > rows.length ? t('log.showing', { shown: rows.length, total }) : t('log.todayRecords')}
           </p>
         </div>
         <Link to="/attendance" className="text-sm font-bold text-primary hover:underline">
-          View all
+          {t('attendance.viewAll')}
         </Link>
       </div>
 
       {isLoading ? (
         <Loader />
       ) : isError ? (
-        <p className="rounded-lg bg-danger/10 p-3 text-sm font-semibold text-danger">Could not load today's attendance log.</p>
+        <p className="rounded-lg bg-danger/10 p-3 text-sm font-semibold text-danger">{t('log.loadError')}</p>
       ) : (
         <Table
           rows={rows}
           columns={[
             {
               key: 'employee',
-              header: 'Employee',
+              header: t('log.columns.employee'),
               render: (row) => (
                 <div className="flex items-center gap-3">
                   <Avatar name={row.employeeName || row.employeeCode || '?'} size="sm" />
@@ -63,9 +66,9 @@ export default function TodayAttendanceLog({ date, refreshMs }) {
                 </div>
               )
             },
-            { key: 'checkIn', header: 'Check In', render: (row) => formatTime(row.checkIn) },
-            { key: 'checkOut', header: 'Check Out', render: (row) => formatTime(row.checkOut) },
-            { key: 'status', header: 'Status', render: (row) => <Badge status={toLabel(row.status)} /> }
+            { key: 'checkIn', header: t('log.columns.checkIn'), render: (row) => formatTime(row.checkIn) },
+            { key: 'checkOut', header: t('log.columns.checkOut'), render: (row) => formatTime(row.checkOut) },
+            { key: 'status', header: t('log.columns.status'), render: (row) => <Badge status={toLabel(row.status)} /> }
           ]}
         />
       )}

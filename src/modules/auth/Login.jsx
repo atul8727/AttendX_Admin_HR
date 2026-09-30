@@ -1,8 +1,10 @@
 import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
+import { useTranslation } from 'react-i18next'
 import { FiLock, FiMail, FiLoader } from 'react-icons/fi'
 import Button from '../../components/ui/Button.jsx'
 import Input from '../../components/ui/Input.jsx'
+import LanguageSwitcher from '../../components/ui/LanguageSwitcher.jsx'
 import logo from '../../assets/logo.svg'
 import { useAuth } from '../../hooks/useAuth.js'
 // import { getAuthToken } from '../../store/apiSlice.js'
@@ -15,6 +17,7 @@ const initialForm = {
 }
 
 export default function Login() {
+  const { t } = useTranslation('auth')
   const navigate = useNavigate()
   const [form, setForm] = useState(initialForm)
   const { login, isLoading, errorMessage } = useAuth()
@@ -41,14 +44,16 @@ export default function Login() {
       <div className="pointer-events-none absolute -bottom-24 -right-24 h-72 w-72 rounded-full bg-teal/20 blur-3xl" />
       <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top_left,rgba(79,70,229,0.10),transparent_35%),radial-gradient(circle_at_bottom_right,rgba(13,148,136,0.10),transparent_35%)]" />
 
+      {/* Language switch — login se pehle bhi language badal sakte hain */}
+      <LanguageSwitcher className="absolute right-4 top-4 z-10" />
+
       <div className="relative w-full max-w-md">
-        {/* Logo + heading, card ke bahar — zyada premium look ke liye */}
         <div className="mb-6 flex flex-col items-center text-center">
           <div className="mb-4 grid h-16 w-16 place-items-center rounded-2xl bg-app-surface shadow-soft ring-1 ring-primary/15">
             <img src={logo} alt="AttendX" className="h-9 w-9" />
           </div>
-          <h1 className="text-2xl font-black tracking-tight text-app-text">AttendX Admin</h1>
-          <p className="mt-1 text-sm text-app-muted">Sign in to manage your workspace</p>
+          <h1 className="text-2xl font-black tracking-tight text-app-text">{t('title')}</h1>
+          <p className="mt-1 text-sm text-app-muted">{t('subtitle')}</p>
         </div>
 
         {/* Card */}
@@ -56,7 +61,7 @@ export default function Login() {
           <form className="space-y-5" onSubmit={handleSubmit}>
             <div className="relative">
               <Input
-                label="Login"
+                label={t('login')}
                 type="email"
                 placeholder="admin@attendx.com"
                 className="pl-10"
@@ -69,7 +74,7 @@ export default function Login() {
 
             <div className="relative">
               <Input
-                label="Password"
+                label={t('password')}
                 type="password"
                 placeholder="••••••••"
                 className="pl-10"
@@ -84,17 +89,17 @@ export default function Login() {
               {isLoading ? (
                 <span className="flex items-center gap-2">
                   <FiLoader className="h-4 w-4 animate-spin" />
-                  Signing in...
+                  {t('signingIn')}
                 </span>
               ) : (
-                'Sign In'
+                t('signIn')
               )}
             </Button>
           </form>
         </section>
 
         <p className="mt-6 text-center text-xs text-app-muted">
-          © {new Date().getFullYear()} AttendX. All rights reserved.
+          {t('footer', { year: new Date().getFullYear() })}
         </p>
       </div>
     </main>

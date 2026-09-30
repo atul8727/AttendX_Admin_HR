@@ -10,24 +10,25 @@ import {
   FiMonitor
 } from 'react-icons/fi'
 
+// labelKey = translation key (locales/*/nav.json). Text yahan mat likho.
 export const navGroups = [
   {
-    label: 'Core',
+    labelKey: 'nav:groups.core',
     items: [
-      { label: 'Dashboard', path: '/', icon: FiHome },
-      { label: 'Employees', path: '/employees', icon: FiUsers },
-      { label: 'Work From Home', path: '/wfh', icon: FiMonitor },
-      { label: 'Offices', path: '/offices', icon: FiMapPin },
-      { label: 'Devices', path: '/devices', icon: FiCpu }
+      { labelKey: 'nav:items.dashboard', path: '/', icon: FiHome },
+      { labelKey: 'nav:items.employees', path: '/employees', icon: FiUsers },
+      { labelKey: 'nav:items.wfh', path: '/wfh', icon: FiMonitor },
+      { labelKey: 'nav:items.offices', path: '/offices', icon: FiMapPin },
+      { labelKey: 'nav:items.devices', path: '/devices', icon: FiCpu }
     ]
   },
   {
-    label: 'Operations',
+    labelKey: 'nav:groups.operations',
     items: [
-      { label: 'Leave', path: '/leave/requests', icon: FiCalendar },
-      { label: 'Holidays', path: '/holidays', icon: FiClipboard },
-      { label: 'Attendance Overview', path: '/attendance', icon: FiActivity },
-      { label: 'Attendance Report', path: '/reports', icon: FiFileText }
+      { labelKey: 'nav:items.leave', path: '/leave/requests', icon: FiCalendar },
+      { labelKey: 'nav:items.holidays', path: '/holidays', icon: FiClipboard },
+      { labelKey: 'nav:items.attendanceOverview', path: '/attendance', icon: FiActivity },
+      { labelKey: 'nav:items.attendanceReport', path: '/reports', icon: FiFileText }
     ]
   }
 ]

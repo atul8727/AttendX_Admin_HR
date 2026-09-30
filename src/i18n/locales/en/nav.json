@@ -1,0 +1,30 @@
+{
+  "groups": { "core": "Core", "operations": "Operations" },
+  "items": {
+    "dashboard": "Dashboard",
+    "employees": "Employees",
+    "wfh": "Work From Home",
+    "offices": "Offices",
+    "devices": "Devices",
+    "leave": "Leave",
+    "holidays": "Holidays",
+    "attendanceOverview": "Attendance Overrides",
+    "attendanceReport": "Attendance Report"
+  },
+  "breadcrumb": {
+    "dashboard": "Dashboard",
+    "employees": "Employees",
+    "new": "New",
+    "wfh": "Work From Home",
+    "offices": "Offices",
+    "devices": "Devices",
+    "leave": "Leave",
+    "requests": "Requests",
+    "balances": "Balances",
+    "types": "Types",
+    "holidays": "Holidays",
+    "attendance": "Attendance",
+    "correction": "Correction",
+    "reports": "Reports"
+  }
+}

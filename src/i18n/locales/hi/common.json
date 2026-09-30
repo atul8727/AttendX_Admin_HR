@@ -1,0 +1,45 @@
+{
+  "company": { "tagline": "स्मार्ट उपस्थिति और कार्यबल प्रबंधन", "address": "नोएडा, उत्तर प्रदेश, भारत" },
+  "language": { "label": "भाषा" },
+  "actions": {
+    "save": "सहेजें",
+    "cancel": "रद्द करें",
+    "close": "बंद करें",
+    "approve": "स्वीकृत करें",
+    "reject": "अस्वीकार करें",
+    "view": "देखें",
+    "previous": "पिछला",
+    "next": "अगला",
+    "logout": "लॉग आउट",
+    "loggingOut": "लॉग आउट हो रहा है...",
+    "loading": "लोड हो रहा है...",
+    "refreshing": "रीफ़्रेश हो रहा है..."
+  },
+  "theme": { "toggle": "थीम बदलें" },
+  "topbar": {
+    "adminOverview": "एडमिन / अवलोकन",
+    "openNavigation": "नेविगेशन खोलें",
+    "notifications": "सूचनाएँ",
+    "defaultAdminName": "एडमिन"
+  },
+  "sidebar": {
+    "brand": "AttendX एडमिन",
+    "close": "साइडबार बंद करें",
+    "collapse": "साइडबार छोटा करें",
+    "closeNavigation": "नेविगेशन बंद करें"
+  },
+  "pagination": {
+    "summary": "पृष्ठ {{page}} / {{totalPages}} - {{total}} में से {{shown}} दिख रहे हैं"
+  },
+  "table": { "noRecords": "कोई रिकॉर्ड नहीं मिला" },
+  "empty": {
+    "title": "यहाँ अभी कुछ नहीं है",
+    "description": "फ़िल्टर बदलकर देखें या नया रिकॉर्ड जोड़ें।"
+  },
+    "geolocation": {
+    "unsupported": "इस ब्राउज़र में स्थान की सुविधा उपलब्ध नहीं है।",
+    "found": "स्थान मिल गया (सटीकता ~{{accuracy}} मी.)।",
+    "denied": "स्थान की अनुमति नहीं दी गई। ब्राउज़र सेटिंग्स में अनुमति दें।",
+    "failed": "आपका स्थान नहीं मिल सका। कृपया फिर कोशिश करें।"
+  }
+}

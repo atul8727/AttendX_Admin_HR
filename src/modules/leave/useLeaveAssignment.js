@@ -1,5 +1,6 @@
 import { useCallback, useRef, useState } from 'react'
 import { useDispatch } from 'react-redux'
+import i18n from '../../i18n/index.js'
 import { API_BASE_URL, apiSlice, authorizedFetch } from '../../store/apiSlice.js'
 
 // Maximum number of parallel requests, to avoid overloading the server.
@@ -27,7 +28,7 @@ async function request(path, options = {}) {
   })
   const body = await response.json().catch(() => null)
   if (!response.ok) {
-    const error = new Error(body?.message || `Request failed (status ${response.status})`)
+       const error = new Error(body?.message || i18n.t('leave:assign.requestFailed', { status: response.status }))
     error.status = response.status
     throw error
   }

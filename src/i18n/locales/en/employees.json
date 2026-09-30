@@ -1,0 +1,116 @@
+{
+  "actions": { "edit": "Edit" },
+  "fields": {
+    "id": "Employee ID",
+    "code": "Employee Code",
+    "email": "Email",
+    "phone": "Phone",
+    "branch": "Branch",
+    "expectedLoginTime": "Expected Login Time",
+    "expectedLogoutTime": "Expected Logout Time",
+    "lateGrace": "Late Grace Minutes",
+    "status": "Status",
+    "createdAt": "Created At",
+    "updatedAt": "Updated At"
+  },
+  "list": {
+    "title": "Employee Management",
+    "subtitle_one": "{{count}} employee - manage profiles, roles and attendance timing in one place.",
+    "subtitle_other": "{{count}} employees - manage profiles, roles and attendance timing in one place.",
+    "add": "Add Employee",
+    "searchPlaceholder": "Search by name, code, email, or phone...",
+    "allStatus": "All Status",
+    "refreshing": "Refreshing employees...",
+    "notAssigned": "Not assigned",
+    "viewAria": "View {{name}}",
+    "editAria": "Edit {{name}}",
+    "activate": "Activate",
+    "deactivate": "Deactivate",
+    "columns": {
+      "employee": "Employee",
+      "code": "Code",
+      "branch": "Branch",
+      "phone": "Phone",
+      "expectedLogin": "Expected Login",
+      "expectedLogout": "Expected Logout",
+      "status": "Status",
+      "actions": "Actions"
+    }
+  },
+  "form": {
+    "addTitle": "Add Employee",
+    "editTitle": "Edit Employee",
+    "code": "Employee Code",
+    "name": "Name",
+    "email": "Email",
+    "password": "Password",
+    "phone": "Phone",
+    "expectedLogin": "Expected Login",
+    "expectedLogout": "Expected Logout",
+    "lateGrace": "Late Grace Minutes",
+    "branch": "Branch",
+    "selectBranch": "Select Branch",
+    "loadingBranches": "Loading branches...",
+    "branchLoadError": "Could not load the branch list. Check the Offices module or API.",
+    "saving": "Saving...",
+    "saveChanges": "Save Changes",
+    "create": "Create Employee"
+  },
+  "view": { "title": "Employee Details" },
+  "detail": {
+    "back": "Back to employees",
+    "notFound": "Employee not found.",
+    "branchLine": "Branch: {{name}}",
+    "tabs": {
+      "profile": "Profile",
+      "office": "Office Assignment",
+      "wfh": "WFH Location",
+      "devices": "Device History"
+    },
+    "profileTitle": "Profile",
+    "office": {
+      "title": "Office Assignment",
+      "officeId": "Office ID",
+      "hint": "To change the branch, edit the employee from the employees list."
+    },
+    "wfh": {
+      "title": "WFH Location",
+      "set": "Set",
+      "toggleAria": "Toggle WFH location status",
+      "loadError": "Could not load the WFH location.",
+      "none": "No WFH location is assigned.",
+      "name": "Name",
+      "status": "Status",
+      "latitude": "Latitude",
+      "longitude": "Longitude",
+      "radius": "Radius",
+      "meters": "{{value}} m",
+      "updatedAt": "Updated At",
+      "activated": "WFH location activated.",
+      "deactivated": "WFH location deactivated.",
+      "statusFailed": "Could not update the WFH location status."
+    },
+    "devices": {
+      "title": "Device History",
+      "count_one": "{{count}} device linked with this employee.",
+      "count_other": "{{count}} devices linked with this employee.",
+      "refreshing": "Refreshing...",
+      "loadError": "Could not load the device history.",
+      "emptyTitle": "No device history found",
+      "emptyBody": "This employee has no registered devices yet.",
+      "unknown": "Unknown device",
+      "registered": "Registered: {{date}}",
+      "lastLogin": "Last login: {{date}}"
+    }
+  },
+  "formPage": {
+    "title": "Employee Form",
+    "fullName": "Full Name",
+    "fullNamePlaceholder": "Employee name",
+    "email": "Email",
+    "role": "Role",
+    "rolePlaceholder": "Designation",
+    "office": "Office",
+    "save": "Save Employee"
+  }
+}

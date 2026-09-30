@@ -1,35 +1,42 @@
 import { useCallback, useState } from 'react'
+import { useTranslation } from 'react-i18next'
 
 // Wraps the browser Geolocation API.
 // locate() calls onSuccess({ latitude, longitude, accuracy }) with coordinates rounded to 6 decimals.
+// message ek translated string hai (common:geolocation.*). State me key rakhte hain, text nahi,
+// taaki message dikhne ke baad language badle to message bhi nayi language me badal jaye.
 export function useGeolocation(onSuccess) {
+  const { t } = useTranslation()
   const [locating, setLocating] = useState(false)
-  const [message, setMessage] = useState('')
+  const [status, setStatus] = useState(null)
 
   const locate = useCallback(() => {
     if (!window.navigator.geolocation) {
-      setMessage('Location is not supported in this browser.')
+      setStatus({ key: 'geolocation.unsupported' })
       return
     }
     setLocating(true)
-    setMessage('')
+    setStatus(null)
     window.navigator.geolocation.getCurrentPosition(
       (position) => {
+        const accuracy = Math.round(position.coords.accuracy)
         onSuccess({
           latitude: position.coords.latitude.toFixed(6),
           longitude: position.coords.longitude.toFixed(6),
-          accuracy: Math.round(position.coords.accuracy)
+          accuracy
         })
-        setMessage(`Location found (accuracy ~${Math.round(position.coords.accuracy)} m).`)
+        setStatus({ key: 'geolocation.found', accuracy })
         setLocating(false)
       },
       (error) => {
-        setMessage(error.code === 1 ? 'Location permission was denied. Allow it in your browser settings.' : 'Could not get your location. Please try again.')
+        setStatus({ key: error.code === 1 ? 'geolocation.denied' : 'geolocation.failed' })
         setLocating(false)
       },
       { enableHighAccuracy: true, timeout: 10000 }
     )
   }, [onSuccess])
+
+  const message = status ? t(status.key, { accuracy: status.accuracy }) : ''
 
   return { locate, locating, message }
 }

@@ -1,4 +1,5 @@
 import { useMemo } from 'react'
+import { useTranslation } from 'react-i18next'
 import { FiActivity, FiAlertCircle, FiCalendar, FiChevronRight, FiClock, FiCpu, FiGift, FiRefreshCw, FiUsers } from 'react-icons/fi'
 import { Link } from 'react-router-dom'
 import Button from '../../components/ui/Button.jsx'
@@ -6,6 +7,7 @@ import Card from '../../components/ui/Card.jsx'
 import EmptyState from '../../components/ui/EmptyState.jsx'
 import Loader from '../../components/ui/Loader.jsx'
 import { ATTENDANCE_STATUS_META, getAttendanceStatusMeta } from '../../constants/dashboard.js'
+import { useFormatters } from '../../lib/format.js'
 import { useGetDashboardQuery } from '../../store/api/dashboardApi.js'
 import TodayAttendanceLog from './components/TodayAttendanceLog.jsx'
 
@@ -23,30 +25,11 @@ function parseDate(value) {
   return value ? new Date(`${value}T00:00:00`) : null
 }
 
-function formatLongDate(value) {
-  const date = parseDate(value)
-  if (!date || Number.isNaN(date.getTime())) return ''
-  return new Intl.DateTimeFormat('en-IN', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' }).format(date)
-}
-
-function formatShortDate(value) {
-  const date = parseDate(value)
-  if (!date || Number.isNaN(date.getTime())) return '-'
-  return new Intl.DateTimeFormat('en-IN', { weekday: 'short', day: '2-digit', month: 'short', year: 'numeric' }).format(date)
-}
-
 function daysUntil(target, from) {
   const a = parseDate(target)
   const b = parseDate(from)
   if (!a || !b) return null
   return Math.round((a - b) / 86_400_000)
-}
-
-function countdownLabel(days) {
-  if (days === null) return ''
-  if (days <= 0) return 'Today'
-  if (days === 1) return 'Tomorrow'
-  return `In ${days} days`
 }
 
 function KpiCard({ label, value, hint, icon, tone, to }) {
@@ -69,13 +52,14 @@ function KpiCard({ label, value, hint, icon, tone, to }) {
 }
 
 function AttendanceDonut({ segments, total }) {
+  const { t } = useTranslation('dashboard')
   const radius = 52
   const circumference = 2 * Math.PI * radius
   let offset = 0
 
   return (
     <div className="relative mx-auto h-44 w-44 shrink-0 sm:h-52 sm:w-52">
-      <svg viewBox="0 0 140 140" className="h-full w-full -rotate-90" role="img" aria-label="Today's attendance breakdown">
+      <svg viewBox="0 0 140 140" className="h-full w-full -rotate-90" role="img" aria-label={t('attendance.chartLabel')}>
         <circle cx="70" cy="70" r={radius} fill="none" strokeWidth="16" className="stroke-primary/10" />
         {total > 0 &&
           segments
@@ -102,7 +86,7 @@ function AttendanceDonut({ segments, total }) {
       <div className="absolute inset-0 grid place-items-center text-center">
         <div>
           <p className="text-4xl font-black leading-none text-app-text">{total}</p>
-          <p className="mt-1 text-xs font-semibold text-app-muted">Total today</p>
+          <p className="mt-1 text-xs font-semibold text-app-muted">{t('attendance.totalToday')}</p>
         </div>
       </div>
     </div>
@@ -110,6 +94,7 @@ function AttendanceDonut({ segments, total }) {
 }
 
 function AttentionRow({ label, count, to, icon }) {
+  const { t } = useTranslation('dashboard')
   const Icon = icon
   const pending = count > 0
   return (
@@ -122,7 +107,7 @@ function AttentionRow({ label, count, to, icon }) {
       </span>
       <div className="min-w-0 flex-1">
         <p className="truncate text-sm font-bold text-app-text">{label}</p>
-        <p className="text-xs font-semibold text-app-muted">{pending ? 'Waiting for your review' : 'Nothing pending'}</p>
+        <p className="text-xs font-semibold text-app-muted">{pending ? t('attention.waiting') : t('attention.nothing')}</p>
       </div>
       <span className={`rounded-full px-2.5 py-1 text-sm font-black ${pending ? TONES.warning : 'bg-app-muted/15 text-app-muted'}`}>{count}</span>
       <FiChevronRight className="h-4 w-4 shrink-0 text-app-muted transition group-hover:translate-x-0.5" />
@@ -131,6 +116,27 @@ function AttentionRow({ label, count, to, icon }) {
 }
 
 export default function Dashboard() {
+  const { t } = useTranslation('dashboard')
+  const fmt = useFormatters()
+
+  // Date helpers: component ke andar, taaki language badalne par update ho.
+  const formatLongDate = (value) => {
+    const date = parseDate(value)
+    if (!date || Number.isNaN(date.getTime())) return ''
+    return fmt.date(date, { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })
+  }
+  const formatShortDate = (value) => {
+    const date = parseDate(value)
+    if (!date || Number.isNaN(date.getTime())) return '-'
+    return fmt.date(date, { weekday: 'short', day: '2-digit', month: 'short', year: 'numeric' })
+  }
+  const countdownLabel = (days) => {
+    if (days === null) return ''
+    if (days <= 0) return t('countdown.today')
+    if (days === 1) return t('countdown.tomorrow')
+    return t('countdown.inDays', { count: days })
+  }
+
   const { data, isLoading, isFetching, isError, refetch } = useGetDashboardQuery(undefined, {
     pollingInterval: REFRESH_INTERVAL_MS,
     skipPollingIfUnfocused: true,
@@ -151,10 +157,10 @@ export default function Dashboard() {
       <Card className="grid min-h-64 place-items-center text-center">
         <div className="space-y-3">
           <FiAlertCircle className="mx-auto h-9 w-9 text-danger" />
-          <h2 className="text-lg font-bold">Could not load the dashboard</h2>
-          <p className="text-sm text-app-muted">Check your connection and try again.</p>
+          <h2 className="text-lg font-bold">{t('loadError.title')}</h2>
+          <p className="text-sm text-app-muted">{t('loadError.body')}</p>
           <Button icon={FiRefreshCw} onClick={refetch}>
-            Try Again
+            {t('tryAgain')}
           </Button>
         </div>
       </Card>
@@ -171,24 +177,24 @@ export default function Dashboard() {
     <div className="space-y-6">
       <div className="flex flex-col justify-between gap-3 sm:flex-row sm:items-end">
         <div>
-          <h1 className="text-xl font-black text-app-text sm:text-2xl">Dashboard</h1>
-          <p className="text-sm text-app-muted">{formatLongDate(data.date) || "Today's overview"}</p>
+          <h1 className="text-xl font-black text-app-text sm:text-2xl">{t('title')}</h1>
+          <p className="text-sm text-app-muted">{formatLongDate(data.date) || t('todayOverview')}</p>
         </div>
         <Button variant="outline" icon={FiRefreshCw} onClick={refetch} disabled={isFetching} className="w-full sm:w-auto">
-          {isFetching ? 'Refreshing...' : 'Refresh'}
+          {isFetching ? t('refreshing') : t('refresh')}
         </Button>
       </div>
 
-      {isError && <p className="rounded-lg bg-danger/10 p-3 text-sm font-semibold text-danger">Could not refresh. Showing the last loaded data.</p>}
+      {isError && <p className="rounded-lg bg-danger/10 p-3 text-sm font-semibold text-danger">{t('loadError.refreshFailed')}</p>}
 
       <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-        <KpiCard label="Active Employees" value={data.totalActiveEmployees} hint="Currently on the team" icon={FiUsers} tone="primary" to="/employees" />
-        <KpiCard label="Checked In" value={checkedIn} hint="Working right now" icon={FiActivity} tone="success" to="/attendance" />
-        <KpiCard label="Late Today" value={data.lateToday} hint="Arrived after grace time" icon={FiClock} tone="warning" to="/attendance" />
+        <KpiCard label={t('kpi.activeEmployees')} value={data.totalActiveEmployees} hint={t('kpi.activeEmployeesHint')} icon={FiUsers} tone="primary" to="/employees" />
+        <KpiCard label={t('kpi.checkedIn')} value={checkedIn} hint={t('kpi.checkedInHint')} icon={FiActivity} tone="success" to="/attendance" />
+        <KpiCard label={t('kpi.lateToday')} value={data.lateToday} hint={t('kpi.lateTodayHint')} icon={FiClock} tone="warning" to="/attendance" />
         <KpiCard
-          label="Pending Requests"
+          label={t('kpi.pendingRequests')}
           value={pendingTotal}
-          hint={`${data.pendingLeaveRequests} leave, ${data.pendingDeviceChangeRequests} device`}
+          hint={t('kpi.pendingHint', { leave: data.pendingLeaveRequests, device: data.pendingDeviceChangeRequests })}
           icon={FiCalendar}
           tone={pendingTotal > 0 ? 'danger' : 'info'}
           to={data.pendingLeaveRequests > 0 || data.pendingDeviceChangeRequests === 0 ? '/leave/requests' : '/devices'}
@@ -199,11 +205,11 @@ export default function Dashboard() {
         <Card className="xl:col-span-2">
           <div className="mb-5 flex items-center justify-between gap-3">
             <div>
-              <h2 className="text-lg font-bold">Today's Attendance</h2>
-              <p className="text-xs text-app-muted">Breakdown of every attendance status for today.</p>
+              <h2 className="text-lg font-bold">{t('attendance.title')}</h2>
+              <p className="text-xs text-app-muted">{t('attendance.subtitle')}</p>
             </div>
             <Link to="/attendance" className="text-sm font-bold text-primary hover:underline">
-              View all
+              {t('attendance.viewAll')}
             </Link>
           </div>
 
@@ -228,7 +234,7 @@ export default function Dashboard() {
                           <span className="text-xl font-black leading-none text-app-text">{segment.count}</span>
                           <span className="text-xs font-semibold text-app-muted">{percent}%</span>
                         </p>
-                        <p className="truncate text-xs font-semibold text-app-muted">{segment.label}</p>
+                        <p className="truncate text-xs font-semibold text-app-muted">{segment.labelKey ? t(segment.labelKey) : segment.label}</p>
                       </div>
                     </Link>
                   )
@@ -236,21 +242,21 @@ export default function Dashboard() {
               </div>
             </div>
           ) : (
-            <EmptyState title="No attendance recorded yet" description="Attendance totals will appear here once the day begins." />
+            <EmptyState title={t('attendance.emptyTitle')} description={t('attendance.emptyDescription')} />
           )}
         </Card>
 
         <div className="min-w-0 space-y-6">
           <Card>
-            <h2 className="mb-4 text-lg font-bold">Needs Your Attention</h2>
+            <h2 className="mb-4 text-lg font-bold">{t('attention.title')}</h2>
             <div className="space-y-3">
-              <AttentionRow label="Leave Requests" count={data.pendingLeaveRequests} to="/leave/requests" icon={FiCalendar} />
-              <AttentionRow label="Device Change Requests" count={data.pendingDeviceChangeRequests} to="/devices" icon={FiCpu} />
+              <AttentionRow label={t('attention.leaveRequests')} count={data.pendingLeaveRequests} to="/leave/requests" icon={FiCalendar} />
+              <AttentionRow label={t('attention.deviceRequests')} count={data.pendingDeviceChangeRequests} to="/devices" icon={FiCpu} />
             </div>
           </Card>
 
           <Card>
-            <h2 className="mb-4 text-lg font-bold">Next Holiday</h2>
+            <h2 className="mb-4 text-lg font-bold">{t('holiday.title')}</h2>
             {holiday ? (
               <div className="flex items-start gap-4">
                 <span className="grid h-12 w-12 shrink-0 place-items-center rounded-lg bg-primary text-white">
@@ -261,15 +267,15 @@ export default function Dashboard() {
                   <p className="text-sm font-semibold text-app-muted">{formatShortDate(holiday.date)}</p>
                   <div className="mt-2 flex flex-wrap gap-2 text-xs font-bold">
                     {holidayDays !== null && <span className="rounded-full bg-primary/10 px-2.5 py-1 text-primary">{countdownLabel(holidayDays)}</span>}
-                    <span className={`rounded-full px-2.5 py-1 ${holiday.holidayType === 'HALF_DAY' ? TONES.warning : TONES.info}`}>{holiday.holidayTypeLabel}</span>
+                    <span className={`rounded-full px-2.5 py-1 ${holiday.holidayType === 'HALF_DAY' ? TONES.warning : TONES.info}`}>{holiday.holidayType === 'HALF_DAY' ? t('status:halfDay') : t('status:fullDay')}</span>
                   </div>
                 </div>
               </div>
             ) : (
-              <p className="text-sm text-app-muted">No upcoming holiday is scheduled.</p>
+              <p className="text-sm text-app-muted">{t('holiday.none')}</p>
             )}
             <Link to="/holidays" className="mt-4 inline-block text-sm font-bold text-primary hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40">
-              Manage holidays
+              {t('holiday.manage')}
             </Link>
           </Card>
         </div>

@@ -1,7 +1,12 @@
 import { createApi, fetchBaseQuery } from '@reduxjs/toolkit/query/react'
 import { notify } from '../lib/notify.js'
+import i18n from '../i18n/index.js'
 
 export const API_BASE_URL = import.meta.env.VITE_API_BASE_URL
+
+if (import.meta.env.DEV && !API_BASE_URL) {
+  throw new Error('VITE_API_BASE_URL is required. Add it to your local .env file.')
+}
 
 
 const TOKEN_KEY = 'attendx-token'
@@ -79,7 +84,7 @@ export function hasValidSession() {
 
 function forceLogout() {
   clearAuthSession()
-  notify.error('Session expired. Please sign in again.', { id: 'session-expired' })
+  notify.error(i18n.t('errors:sessionExpired'), { id: 'session-expired' })
   if (window.location.pathname !== '/login') window.location.replace('/login')
 }
 

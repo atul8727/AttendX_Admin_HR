@@ -1,4 +1,6 @@
-export function getApiErrorMessage(error, fallback = 'Something went wrong. Please try again.') {
+import i18n from '../i18n/index.js'
+
+export function getApiErrorMessage(error, fallback = i18n.t('errors:generic')) {
   const data = error?.data
   return (
     data?.message ||

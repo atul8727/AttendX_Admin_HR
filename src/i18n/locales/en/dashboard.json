@@ -1,0 +1,71 @@
+{
+  "title": "Dashboard",
+  "todayOverview": "Today's overview",
+  "refresh": "Refresh",
+  "refreshing": "Refreshing...",
+  "tryAgain": "Try Again",
+  "loadError": {
+    "title": "Could not load the dashboard",
+    "body": "Check your connection and try again.",
+    "refreshFailed": "Could not refresh. Showing the last loaded data."
+  },
+  "kpi": {
+    "activeEmployees": "Active Employees",
+    "activeEmployeesHint": "Currently on the team",
+    "checkedIn": "Checked In",
+    "checkedInHint": "Working right now",
+    "lateToday": "Late Today",
+    "lateTodayHint": "Arrived after grace time",
+    "pendingRequests": "Pending Requests",
+    "pendingHint": "{{leave}} leave, {{device}} device"
+  },
+  "attendance": {
+    "title": "Today's Attendance",
+    "subtitle": "Breakdown of every attendance status for today.",
+    "viewAll": "View all",
+    "totalToday": "Total today",
+    "chartLabel": "Today's attendance breakdown",
+    "emptyTitle": "No attendance recorded yet",
+    "emptyDescription": "Attendance totals will appear here once the day begins."
+  },
+  "attendanceStatus": {
+    "checkedIn": "Checked In",
+    "checkedOut": "Checked Out",
+    "notCheckedIn": "Not Checked In",
+    "absent": "Absent",
+    "onLeave": "On Leave",
+    "halfDayLeave": "Half Day Leave",
+    "holiday": "Holiday",
+    "halfDayHoliday": "Half Day Holiday"
+  },
+  "attention": {
+    "title": "Needs Your Attention",
+    "leaveRequests": "Leave Requests",
+    "deviceRequests": "Device Change Requests",
+    "waiting": "Waiting for your review",
+    "nothing": "Nothing pending"
+  },
+  "holiday": {
+    "title": "Next Holiday",
+    "none": "No upcoming holiday is scheduled.",
+    "manage": "Manage holidays"
+  },
+  "countdown": {
+    "today": "Today",
+    "tomorrow": "Tomorrow",
+    "inDays_one": "In {{count}} day",
+    "inDays_other": "In {{count}} days"
+  },
+  "log": {
+    "title": "Attendance Log",
+    "showing": "Showing {{shown}} of {{total}} records today.",
+    "todayRecords": "Today's attendance records.",
+    "loadError": "Could not load today's attendance log.",
+    "columns": {
+      "employee": "Employee",
+      "checkIn": "Check In",
+      "checkOut": "Check Out",
+      "status": "Status"
+    }
+  }
+}
