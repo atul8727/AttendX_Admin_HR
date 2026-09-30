@@ -1,0 +1,69 @@
+{
+  "title": "डिवाइस प्रबंधन",
+  "subtitle": {
+    "requests": "कर्मचारियों द्वारा भेजे गए डिवाइस बदलाव अनुरोध देखें और यहीं स्वीकृत या अस्वीकार करें।",
+    "history": "कर्मचारी-वार पंजीकृत डिवाइस, स्थिति और लॉगिन इतिहास एक ही जगह देखें।"
+  },
+  "tabs": {
+    "pending": "लंबित",
+    "approved": "स्वीकृत",
+    "rejected": "अस्वीकृत",
+    "history": "इतिहास"
+  },
+  "summary": {
+    "requests_one": "{{count}} अनुरोध",
+    "requests_other": "{{count}} अनुरोध",
+    "employees_one": "{{count}} कर्मचारी",
+    "employees_other": "{{count}} कर्मचारी"
+  },
+  "loadFailed": "डेटा लोड नहीं हो सका।",
+  "employeeFallback": "कर्मचारी #{{id}}",
+  "idLabel": "आईडी: {{id}}",
+  "columns": {
+    "employee": "कर्मचारी",
+    "currentVsRequested": "वर्तमान बनाम अनुरोधित",
+    "requestedAt": "अनुरोध का समय",
+    "status": "स्थिति",
+    "actions": "कार्रवाई",
+    "code": "कोड",
+    "deviceSummary": "डिवाइस सारांश",
+    "employeeStatus": "कर्मचारी की स्थिति"
+  },
+  "compare": {
+    "current": "वर्तमान",
+    "requested": "अनुरोधित",
+    "to": "→"
+  },
+  "summaryCell": {
+    "loading": "डिवाइस लोड हो रहे हैं...",
+    "devices_one": "{{count}} डिवाइस",
+    "devices_other": "{{count}} डिवाइस",
+    "active_one": "{{count}} सक्रिय डिवाइस",
+    "active_other": "{{count}} सक्रिय डिवाइस",
+    "latest": "सबसे हाल का: {{name}}"
+  },
+  "viewHistory": "इतिहास देखें",
+  "reject": {
+    "title": "डिवाइस बदलाव अनुरोध अस्वीकार करें",
+    "reasonLabel": "अस्वीकार करने का कारण",
+    "reasonPlaceholder": "कर्मचारी की पहचान सत्यापित नहीं हो सकी",
+    "submit": "अनुरोध अस्वीकार करें"
+  },
+  "history": {
+    "title": "कर्मचारी का डिवाइस इतिहास",
+    "noEmail": "ईमेल नहीं है",
+    "found_one": "{{count}} डिवाइस मिला",
+    "found_other": "{{count}} डिवाइस मिले",
+    "hint": "पंजीकृत डिवाइस, स्थिति, प्लेटफ़ॉर्म और लॉगिन इतिहास।",
+    "loadError": "डिवाइस इतिहास लोड नहीं हो सका।",
+    "emptyTitle": "कोई डिवाइस इतिहास नहीं मिला",
+    "emptyBody": "इस कर्मचारी का अभी तक कोई पंजीकृत डिवाइस नहीं मिला।"
+  },
+  "card": {
+    "unknown": "अज्ञात डिवाइस",
+    "deviceId": "डिवाइस आईडी",
+    "deviceModel": "डिवाइस मॉडल",
+    "registeredAt": "पंजीकरण का समय",
+    "lastLoginAt": "आखिरी लॉगिन का समय"
+  }
+}

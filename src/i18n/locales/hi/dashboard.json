@@ -1,0 +1,71 @@
+{
+  "title": "डैशबोर्ड",
+  "todayOverview": "आज का अवलोकन",
+  "refresh": "रीफ़्रेश",
+  "refreshing": "रीफ़्रेश हो रहा है...",
+  "tryAgain": "फिर से प्रयास करें",
+  "loadError": {
+    "title": "डैशबोर्ड लोड नहीं हो सका",
+    "body": "अपना कनेक्शन जाँचें और फिर से प्रयास करें।",
+    "refreshFailed": "रीफ़्रेश नहीं हो सका। पिछला लोड किया गया डेटा दिखाया जा रहा है।"
+  },
+  "kpi": {
+    "activeEmployees": "सक्रिय कर्मचारी",
+    "activeEmployeesHint": "अभी टीम में",
+    "checkedIn": "चेक-इन किया",
+    "checkedInHint": "अभी काम कर रहे हैं",
+    "lateToday": "आज देर से",
+    "lateTodayHint": "ग्रेस टाइम के बाद पहुँचे",
+    "pendingRequests": "लंबित अनुरोध",
+    "pendingHint": "{{leave}} छुट्टी, {{device}} डिवाइस"
+  },
+  "attendance": {
+    "title": "आज की उपस्थिति",
+    "subtitle": "आज की हर उपस्थिति स्थिति का विवरण।",
+    "viewAll": "सभी देखें",
+    "totalToday": "आज कुल",
+    "chartLabel": "आज की उपस्थिति का विवरण",
+    "emptyTitle": "अभी तक कोई उपस्थिति दर्ज नहीं हुई",
+    "emptyDescription": "दिन शुरू होते ही उपस्थिति का कुल योग यहाँ दिखेगा।"
+  },
+  "attendanceStatus": {
+    "checkedIn": "चेक-इन किया",
+    "checkedOut": "चेक-आउट किया",
+    "notCheckedIn": "चेक-इन नहीं किया",
+    "absent": "अनुपस्थित",
+    "onLeave": "छुट्टी पर",
+    "halfDayLeave": "आधे दिन की छुट्टी",
+    "holiday": "अवकाश",
+    "halfDayHoliday": "आधे दिन का अवकाश"
+  },
+  "attention": {
+    "title": "आपके ध्यान की ज़रूरत",
+    "leaveRequests": "छुट्टी के अनुरोध",
+    "deviceRequests": "डिवाइस बदलाव के अनुरोध",
+    "waiting": "आपकी समीक्षा की प्रतीक्षा में",
+    "nothing": "कुछ भी लंबित नहीं"
+  },
+  "holiday": {
+    "title": "अगला अवकाश",
+    "none": "कोई आगामी अवकाश निर्धारित नहीं है।",
+    "manage": "अवकाश प्रबंधित करें"
+  },
+  "countdown": {
+    "today": "आज",
+    "tomorrow": "कल",
+    "inDays_one": "{{count}} दिन में",
+    "inDays_other": "{{count}} दिन में"
+  },
+  "log": {
+    "title": "उपस्थिति लॉग",
+    "showing": "आज के {{total}} रिकॉर्ड में से {{shown}} दिख रहे हैं।",
+    "todayRecords": "आज के उपस्थिति रिकॉर्ड।",
+    "loadError": "आज का उपस्थिति लॉग लोड नहीं हो सका।",
+    "columns": {
+      "employee": "कर्मचारी",
+      "checkIn": "चेक-इन",
+      "checkOut": "चेक-आउट",
+      "status": "स्थिति"
+    }
+  }
+}

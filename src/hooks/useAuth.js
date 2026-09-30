@@ -1,15 +1,17 @@
+import { useTranslation } from 'react-i18next'
 import { clearAuthSession, setAuthSession } from '../store/apiSlice.js'
 import { useLoginAdminMutation, useLogoutAdminMutation } from '../store/api/authApi.js'
 import { getApiErrorMessage } from '../lib/apiError.js'
 
 export function useAuth() {
+  const { t } = useTranslation('auth')
   const [loginApi, { isLoading, isError, error }] = useLoginAdminMutation()
   const [logoutApi] = useLogoutAdminMutation()
 
   return {
     isLoading,
     isError,
-    errorMessage: getApiErrorMessage(error, 'Login failed.'),
+    errorMessage: getApiErrorMessage(error, t('loginFailed')),
     login: async (form) => {
       const response = await loginApi({ login: form.login.trim(), password: form.password }).unwrap()
       setAuthSession(response)

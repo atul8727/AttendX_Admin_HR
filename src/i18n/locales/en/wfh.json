@@ -1,0 +1,63 @@
+{
+  "list": {
+    "title": "Work From Home",
+    "subtitle": "Employee WFH locations from the attendance service.",
+    "searchPlaceholder": "Search by name, code, email or phone...",
+    "allEmployees": "All Employees",
+    "notAssigned": "Not assigned",
+    "loadFailed": "Failed to load",
+    "retry": "Retry",
+    "pageSummary": "Page {{page}} of {{totalPages}}",
+    "columns": {
+      "employee": "Employee",
+      "location": "WFH Location",
+      "latitude": "Latitude",
+      "longitude": "Longitude",
+      "radius": "Radius",
+      "status": "WFH Status",
+      "actions": "Actions"
+    },
+    "viewAria": "View WFH location for {{name}}",
+    "editAria": "Edit WFH location for {{name}}",
+    "setAria": "Set WFH location for {{name}}",
+    "activate": "Activate",
+    "deactivate": "Deactivate",
+    "activated": "WFH location activated.",
+    "deactivated": "WFH location deactivated.",
+    "statusFailed": "Could not update the WFH location status."
+  },
+  "details": {
+    "title": "WFH Location Details",
+    "employee": "Employee",
+    "locationName": "Location Name",
+    "latitude": "Latitude",
+    "longitude": "Longitude",
+    "radius": "Radius",
+    "meters": "{{value}} m",
+    "status": "Status",
+    "none": "No WFH location is assigned to this employee.",
+    "edit": "Edit",
+    "setLocation": "Set Location"
+  },
+  "modal": {
+    "editTitle": "Edit WFH Location",
+    "setTitle": "Set WFH Location",
+    "subtitle": "{{name}}'s approved work-from-home check-in location.",
+    "employeeFallback": "Employee",
+    "locationName": "Location Name",
+    "latitude": "Latitude",
+    "longitude": "Longitude",
+    "radius": "Radius (meters)",
+    "save": "Save Location",
+    "saving": "Saving...",
+    "updated": "WFH location updated.",
+    "saved": "WFH location saved.",
+    "saveFailed": "Could not save the WFH location.",
+    "errors": {
+      "name": "Location name is required.",
+      "latitude": "Enter a latitude between -90 and 90.",
+      "longitude": "Enter a longitude between -180 and 180.",
+      "radius": "Enter a radius greater than 0 meters."
+    }
+  }
+}

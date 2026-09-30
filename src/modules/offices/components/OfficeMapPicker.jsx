@@ -2,6 +2,7 @@ import { useEffect, useMemo } from 'react'
 import L from 'leaflet'
 import { Circle, MapContainer, Marker, TileLayer, useMap, useMapEvents } from 'react-leaflet'
 import 'leaflet/dist/leaflet.css'
+import { useTranslation } from 'react-i18next'
 
 // Leaflet's default marker icon breaks with bundlers like Vite, so we use our own SVG pin.
 const pinIcon = L.divIcon({
@@ -56,6 +57,7 @@ function ClickToPick({ onChange }) {
  * latitude, longitude and radius can be strings or numbers.
  */
 export default function OfficeMapPicker({ latitude, longitude, radius, onChange, readOnly = false, height = 280 }) {
+  const { t } = useTranslation('offices')
   const point = useMemo(() => toPoint(latitude, longitude), [latitude, longitude])
   const radiusMeters = Number(radius)
   const showCircle = point && Number.isFinite(radiusMeters) && radiusMeters > 0
@@ -95,7 +97,7 @@ export default function OfficeMapPicker({ latitude, longitude, radius, onChange,
       </div>
       {!readOnly && (
         <p className="text-xs text-app-muted">
-          {point ? 'Drag the pin or click the map to change the location. The blue circle shows the allowed radius.' : 'Click the map to choose a location.'}
+          {point ? t('map.hintPoint') : t('map.hintEmpty')}
         </p>
       )}
     </div>

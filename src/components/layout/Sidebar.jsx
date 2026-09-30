@@ -1,11 +1,13 @@
 import { NavLink } from 'react-router-dom'
 import { FiChevronLeft, FiMenu, FiX } from 'react-icons/fi'
 import { useContext } from 'react'
+import { useTranslation } from 'react-i18next'
 import { SidebarContext } from '../../context/SidebarContext.jsx'
 import { navGroups } from '../../constants/navConfig.js'
 import logo from '../../assets/logo.svg'
 
 export default function Sidebar() {
+  const { t } = useTranslation()
   const { collapsed, mobileOpen, toggleSidebar, toggleMobileSidebar, closeMobileSidebar } = useContext(SidebarContext)
   const width = collapsed ? 'lg:w-20' : 'lg:w-72'
 
@@ -15,7 +17,7 @@ export default function Sidebar() {
         <button
           className="fixed inset-0 z-30 bg-slate-950/50 print:hidden lg:hidden"
           onClick={closeMobileSidebar}
-          aria-label="Close navigation"
+          aria-label={t('common:sidebar.closeNavigation')}
         />
       )}
       <aside
@@ -24,32 +26,32 @@ export default function Sidebar() {
         <div className="flex h-16 items-center justify-between px-4">
           <div className="flex items-center gap-3">
             <img src={logo} alt="AttendX" className="h-10 w-10 rounded-lg" />
-            <span className={`text-xl font-black ${collapsed ? 'lg:hidden' : ''}`}>AttendX Admin</span>
+            <span className={`text-xl font-black ${collapsed ? 'lg:hidden' : ''}`}>{t('common:sidebar.brand')}</span>
           </div>
           <button
             className="grid h-9 w-9 shrink-0 place-items-center rounded-lg bg-white/15 lg:hidden"
             onClick={toggleMobileSidebar}
-            aria-label="Close sidebar"
+            aria-label={t('common:sidebar.close')}
           >
             <FiX />
           </button>
           <button
             className="hidden h-9 w-9 shrink-0 place-items-center rounded-lg bg-white/15 lg:grid"
             onClick={toggleSidebar}
-            aria-label="Collapse sidebar"
+            aria-label={t('common:sidebar.collapse')}
           >
             {collapsed ? <FiMenu /> : <FiChevronLeft />}
           </button>
         </div>
         <nav className="hide-scrollbar flex-1 space-y-6 overflow-y-auto overscroll-contain px-3 py-4">
           {navGroups.map((group) => (
-            <div key={group.label}>
+            <div key={group.labelKey}>
               <p
                 className={`px-3 pb-2 text-xs font-bold uppercase tracking-wide text-white/60 ${
                   collapsed ? 'lg:hidden' : ''
                 }`}
               >
-                {group.label}
+                {t(group.labelKey)}
               </p>
               <div className="space-y-1">
                 {group.items.map((item) => {
@@ -67,7 +69,7 @@ export default function Sidebar() {
                     >
                       <span className="flex min-w-0 items-center gap-3">
                         <Icon className="h-5 w-5 shrink-0" />
-                        <span className={`truncate ${collapsed ? 'lg:hidden' : ''}`}>{item.label}</span>
+                        <span className={`truncate ${collapsed ? 'lg:hidden' : ''}`}>{t(item.labelKey)}</span>
                       </span>
                       {item.badge && (
                         <span

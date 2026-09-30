@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import { FiAlertCircle, FiCheckCircle, FiGlobe, FiMapPin, FiPlus, FiRefreshCw, FiSearch, FiTarget } from 'react-icons/fi'
 import Button from '../../components/ui/Button.jsx'
 import Card from '../../components/ui/Card.jsx'
@@ -6,14 +7,15 @@ import EmptyState from '../../components/ui/EmptyState.jsx'
 import Input from '../../components/ui/Input.jsx'
 import Loader from '../../components/ui/Loader.jsx'
 import StatCard from '../../components/ui/StatCard.jsx'
+import { getApiErrorMessage } from '../../lib/apiError.js'
 import { useAddOfficeMutation, useDeleteOfficeMutation, useGetOfficesQuery, useUpdateOfficeMutation } from '../../store/api/officesApi.js'
 import DeleteOfficeModal from './components/DeleteOfficeModal.jsx'
 import OfficeCard from './components/OfficeCard.jsx'
 import OfficeDetailsModal from './components/OfficeDetailsModal.jsx'
 import OfficeFormModal from './components/OfficeFormModal.jsx'
-import { getApiErrorMessage } from './officeUtils.js'
 
 export default function OfficeList() {
+  const { t } = useTranslation('offices')
   const { data, isLoading, isFetching, isError, error, refetch } = useGetOfficesQuery()
   const [addOffice] = useAddOfficeMutation()
   const [updateOffice] = useUpdateOfficeMutation()
@@ -63,10 +65,10 @@ export default function OfficeList() {
   async function handleSave(values) {
     if (formState.office) {
       await updateOffice({ id: formState.office.id, ...values }).unwrap()
-      setNotice('Office update ho gaya.')
+      setNotice(t('list.notice.updated'))
     } else {
       await addOffice(values).unwrap()
-      setNotice('Naya office create ho gaya.')
+      setNotice(t('list.notice.created'))
     }
     closeForm()
   }
@@ -74,7 +76,7 @@ export default function OfficeList() {
   async function handleDelete(office) {
     await deleteOffice(office.id).unwrap()
     setDeleting(null)
-    setNotice(`${office.name} delete ho gaya.`)
+    setNotice(t('list.notice.deleted', { name: office.name }))
   }
 
   if (isLoading) return <Loader />
@@ -83,11 +85,11 @@ export default function OfficeList() {
     <div className="space-y-6">
       <div className="flex flex-col justify-between gap-3 sm:flex-row sm:items-end">
         <div>
-          <h1 className="text-xl font-black sm:text-2xl">Office Management</h1>
-          <p className="text-sm text-app-muted">Offices, geofence radius aur weekly off ek jagah manage karo.</p>
+          <h1 className="text-xl font-black sm:text-2xl">{t('list.title')}</h1>
+          <p className="text-sm text-app-muted">{t('list.subtitle')}</p>
         </div>
         <Button icon={FiPlus} onClick={openCreate} className="w-full sm:w-auto">
-          Add Office
+          {t('list.add')}
         </Button>
       </div>
 
@@ -99,23 +101,21 @@ export default function OfficeList() {
       )}
 
       <div className="grid gap-3 sm:grid-cols-3">
-        <StatCard label="Total Offices" value={stats.total} tone="primary" icon={FiMapPin} />
-        <StatCard label="Avg Geofence Radius" value={`${stats.averageRadius} m`} tone="secondary" icon={FiTarget} />
-        <StatCard label="Timezones" value={stats.timezones} tone="info" icon={FiGlobe} />
+        <StatCard label={t('list.stats.total')} value={stats.total} tone="primary" icon={FiMapPin} />
+        <StatCard label={t('list.stats.avgRadius')} value={t('units.meters', { value: stats.averageRadius })} tone="secondary" icon={FiTarget} />
+        <StatCard label={t('list.stats.timezones')} value={stats.timezones} tone="info" icon={FiGlobe} />
       </div>
 
       <Card className="space-y-4">
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <div className="relative w-full sm:max-w-sm">
             <FiSearch className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-app-muted" />
-            <Input placeholder="Search by name, timezone or ID..." value={search} onChange={(event) => setSearch(event.target.value)} className="pl-9" />
+            <Input placeholder={t('list.searchPlaceholder')} value={search} onChange={(event) => setSearch(event.target.value)} className="pl-9" />
           </div>
           <div className="flex items-center gap-3 text-sm text-app-muted">
-            {isFetching && <span className="font-semibold">Refreshing...</span>}
-            <span>
-              Showing {filtered.length} of {offices.length}
-            </span>
-            <Button variant="ghost" icon={FiRefreshCw} onClick={refetch} disabled={isFetching} aria-label="Refresh offices" className="px-3" />
+            {isFetching && <span className="font-semibold">{t('common:actions.refreshing')}</span>}
+            <span>{t('list.showing', { shown: filtered.length, total: offices.length })}</span>
+            <Button variant="ghost" icon={FiRefreshCw} onClick={refetch} disabled={isFetching} aria-label={t('list.refreshAria')} className="px-3" />
           </div>
         </div>
 
@@ -123,24 +123,24 @@ export default function OfficeList() {
           <div className="flex flex-col items-start gap-3 rounded-xl bg-danger/10 p-4 sm:flex-row sm:items-center sm:justify-between">
             <p className="flex items-center gap-2 text-sm font-semibold text-danger">
               <FiAlertCircle className="h-4 w-4 shrink-0" />
-              {getApiErrorMessage(error) || 'Offices load nahi ho paaye.'}
+              {getApiErrorMessage(error, t('list.loadFailed'))}
             </p>
             <Button variant="danger" icon={FiRefreshCw} onClick={refetch}>
-              Retry
+              {t('list.retry')}
             </Button>
           </div>
         ) : filtered.length === 0 ? (
           offices.length === 0 ? (
             <div className="space-y-3">
-              <EmptyState title="Abhi koi office nahi hai" description="Pehla office add karke geofence aur weekly off set karo." />
+              <EmptyState title={t('list.emptyTitle')} description={t('list.emptyBody')} />
               <div className="flex justify-center">
                 <Button icon={FiPlus} onClick={openCreate}>
-                  Add your first office
+                  {t('list.addFirst')}
                 </Button>
               </div>
             </div>
           ) : (
-            <EmptyState title="Koi office nahi mila" description="Search text badal ke dobara try karo." />
+            <EmptyState title={t('list.noMatchTitle')} description={t('list.noMatchBody')} />
           )
         ) : (
           <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">

@@ -1,0 +1,62 @@
+{
+  "overview": {
+    "title": "Attendance Overview", "subtitle": "Review each employee's attendance for a selected day.", "tab": "Overview", "overridesTab": "Manual Overrides", "date": "Date", "previousDay": "Previous day", "nextDay": "Next day", "search": "Search employee", "searchPlaceholder": "Name or employee code", "status": "Status", "pageSearchHint": "Search and status filters apply to the loaded page.",
+    "stats": { "total": "Total (this page)", "present": "Present (this page)", "absent": "Absent (this page)", "onLeave": "On leave (this page)", "late": "Late (this page)" },
+    "columns": { "employee": "Employee", "status": "Status", "checkIn": "Check In", "checkOut": "Check Out", "late": "Late (min)", "early": "Early (min)", "worked": "Worked", "actions": "Actions" }
+  },
+  "list": {
+    "title": "Attendance Management",
+    "subtitle": "Manually set or review attendance status overrides for employees.",
+    "stats": {
+      "total": "Total overrides",
+      "absent": "Absent (this page)",
+      "present": "Present (this page)",
+      "onLeave": "On leave (this page)"
+    },
+    "filters": {
+      "title": "Filters",
+      "clear": "Clear filters",
+      "searchLabel": "Search employee",
+      "searchPlaceholder": "Name or employee code",
+      "from": "From",
+      "to": "To",
+      "chipSearch": "Search: {{value}}",
+      "chipFrom": "From {{date}}",
+      "chipTo": "To {{date}}"
+    },
+    "truncated": "Showing matches from the first 100 overrides in this range. Narrow the From/To range for complete results.",
+    "noEmployeeTitle": "No employee found",
+    "noEmployeeBody": "No employee matched this name or code.",
+    "employeeFallback": "Employee #{{id}}",
+    "idLabel": "ID: {{id}}",
+    "columns": {
+      "employee": "Employee",
+      "date": "Date",
+      "status": "Status",
+      "reason": "Reason",
+      "setOn": "Set On",
+      "actions": "Actions"
+    },
+    "remove": "Remove",
+    "delete": {
+      "title": "Remove Attendance Override",
+      "confirm": "Are you sure you want to remove this attendance override? This action cannot be undone.",
+      "submit": "Remove Override",
+      "removing": "Removing..."
+    }
+  },
+  "correction": {
+    "title": "Attendance Correction",
+    "viewAll": "View all overrides",
+    "employee": "Employee",
+    "selectEmployee": "Select employee",
+    "loadingEmployees": "Loading employees...",
+    "date": "Date",
+    "status": "Status",
+    "reason": "Mandatory Reason",
+    "submit": "Submit Correction",
+    "saving": "Saving...",
+    "saved": "Attendance override saved.",
+    "saveFailed": "Could not save the override."
+  }
+}

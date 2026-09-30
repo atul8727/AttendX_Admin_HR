@@ -1,3 +1,4 @@
+import { useTranslation } from 'react-i18next'
 import { FiClock, FiEdit, FiExternalLink, FiEye, FiMapPin, FiTarget, FiTrash2, FiCrosshair } from 'react-icons/fi'
 import Button from '../../../components/ui/Button.jsx'
 import { formatCoordinate, getMapsUrl, getWeekdayLabel } from '../officeUtils.js'
@@ -16,6 +17,7 @@ function MiniStat({ icon, label, value }) {
 }
 
 export default function OfficeCard({ office, onView, onEdit, onDelete }) {
+  const { t } = useTranslation('offices')
   const hasCoordinates = office.latitude !== null && office.longitude !== null
 
   return (
@@ -36,13 +38,12 @@ export default function OfficeCard({ office, onView, onEdit, onDelete }) {
               {office.timezone}
             </p>
           </div>
-          {/* <span className="shrink-0 rounded-full bg-primary/10 px-2.5 py-1 text-[11px] font-bold text-primary">ID {office.id}</span> */}
         </div>
 
         <div className="grid grid-cols-3 gap-2">
-          <MiniStat icon={FiTarget} label="Geofence" value={`${office.allowedRadius} m`} />
-          <MiniStat icon={FiCrosshair} label="GPS Acc." value={`${office.maxGpsAccuracy} m`} />
-          <MiniStat icon={FiClock} label="Week off" value={getWeekdayLabel(office.weeklyOff).slice(0, 3)} />
+          <MiniStat icon={FiTarget} label={t('card.geofence')} value={t('units.meters', { value: office.allowedRadius })} />
+          <MiniStat icon={FiCrosshair} label={t('card.gpsAccuracy')} value={t('units.meters', { value: office.maxGpsAccuracy })} />
+          <MiniStat icon={FiClock} label={t('card.weekOff')} value={getWeekdayLabel(office.weeklyOff, t, true)} />
         </div>
 
         <div className="flex items-center justify-between gap-2 rounded-xl bg-primary/5 px-3 py-2 text-xs">
@@ -56,17 +57,17 @@ export default function OfficeCard({ office, onView, onEdit, onDelete }) {
               rel="noopener noreferrer"
               className="inline-flex shrink-0 items-center gap-1 font-bold text-primary hover:underline"
             >
-              Map <FiExternalLink className="h-3 w-3" />
+              {t('card.map')} <FiExternalLink className="h-3 w-3" />
             </a>
           )}
         </div>
 
         <div className="mt-auto flex gap-2 pt-1">
           <Button variant="outline" icon={FiEye} onClick={() => onView(office)} className="flex-1">
-            View
+            {t('card.view')}
           </Button>
-          <Button variant="info" icon={FiEdit} onClick={() => onEdit(office)} className="px-3" aria-label={`Edit ${office.name}`} />
-          <Button variant="danger" icon={FiTrash2} onClick={() => onDelete(office)} className="px-3" aria-label={`Delete ${office.name}`} />
+          <Button variant="info" icon={FiEdit} onClick={() => onEdit(office)} className="px-3" aria-label={t('card.editAria', { name: office.name })} />
+          <Button variant="danger" icon={FiTrash2} onClick={() => onDelete(office)} className="px-3" aria-label={t('card.deleteAria', { name: office.name })} />
         </div>
       </div>
     </article>

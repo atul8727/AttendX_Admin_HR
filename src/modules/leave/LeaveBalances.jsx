@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
+import { Trans, useTranslation } from 'react-i18next'
 import { FiEdit, FiEyeOff, FiUser, FiUsers } from 'react-icons/fi'
 import Avatar from '../../components/ui/Avatar.jsx'
 import Button from '../../components/ui/Button.jsx'
@@ -10,6 +11,7 @@ import Modal from '../../components/ui/Modal.jsx'
 import ProgressBar from '../../components/ui/ProgressBar.jsx'
 import Select from '../../components/ui/Select.jsx'
 import Table from '../../components/ui/Table.jsx'
+import { getApiErrorMessage } from '../../lib/apiError.js'
 import LeaveSubNav from './LeaveSubNav.jsx'
 import AssignAllModal from './components/AssignAllModal.jsx'
 import { useLeaveAssignment } from './useLeaveAssignment.js'
@@ -27,17 +29,14 @@ const PAGE_SIZE = 20
 
 const emptyForm = { employeeId: '', leaveTypeId: '', year: String(CURRENT_YEAR) }
 
-function getApiErrorMessage(error) {
-  return error?.data?.message || error?.error || error?.message || ''
-}
-
 function EmployeeInfo({ employee, employeeId }) {
+  const { t } = useTranslation('leave')
   return (
     <div className="flex items-center gap-3">
       <Avatar name={employee?.name || String(employeeId)} />
       <div>
-        <p className="font-bold">{employee?.name || `Employee #${employeeId}`}</p>
-        <p className="text-xs text-app-muted">{employee?.code || `ID: ${employeeId}`}</p>
+        <p className="font-bold">{employee?.name || t('common.employeeFallback', { id: employeeId })}</p>
+        <p className="text-xs text-app-muted">{employee?.code || t('common.idLabel', { id: employeeId })}</p>
       </div>
     </div>
   )
@@ -51,6 +50,7 @@ function EmployeeFetchedCell({ employeeId }) {
 
 // Shows one leave type exactly as configured in the Leave Types API.
 function LeaveTypeCard({ type }) {
+  const { t } = useTranslation('leave')
   const active = type.status === 'Active'
   return (
     <div className={`min-w-[210px] flex-1 basis-0 snap-start rounded-lg border border-primary/15 bg-app-surface p-4 ${active ? '' : 'opacity-70'}`}>
@@ -65,18 +65,19 @@ function LeaveTypeCard({ type }) {
           }`}
         >
           {!active && <FiEyeOff className="h-3 w-3" />}
-          {active ? 'Active' : 'Hidden'}
+          {active ? t('status:active') : t('common.hidden')}
         </span>
       </div>
       <p className="mt-4 flex items-end gap-1.5">
         <span className="text-3xl font-black leading-none text-app-text">{type.defaultAnnualDays}</span>
-        <span className="pb-0.5 text-xs font-semibold text-app-muted">days / year</span>
+        <span className="pb-0.5 text-xs font-semibold text-app-muted">{t('common.perYear')}</span>
       </p>
     </div>
   )
 }
 
 export default function LeaveBalances() {
+  const { t } = useTranslation('leave')
   const [year, setYear] = useState(String(CURRENT_YEAR))
   const [employeeFilter, setEmployeeFilter] = useState('')
   const [page, setPage] = useState(1)
@@ -114,10 +115,13 @@ export default function LeaveBalances() {
   const pagination = balancePage?.pagination || { page: 1, limit: PAGE_SIZE, total: rows.length, total_pages: 1 }
 
   const employeeOptions = [
-    { value: '', label: employeesLoading ? 'Loading employees...' : 'All Employees' },
+    { value: '', label: employeesLoading ? t('balances.loadingEmployees') : t('balances.allEmployees') },
     ...employees.map((employee) => ({ value: employee.id, label: `${employee.name} (${employee.code})` }))
   ]
-  const leaveTypeOptions = activeTypes.map((type) => ({ value: type.id, label: `${type.name} (${type.code}) - ${type.defaultAnnualDays} days / year` }))
+  const leaveTypeOptions = activeTypes.map((type) => ({
+    value: type.id,
+    label: t('balances.typeOption', { name: type.name, code: type.code, days: t('common.days', { count: type.defaultAnnualDays }) })
+  }))
 
   function openSingleModal() {
     addState.reset?.()
@@ -155,20 +159,21 @@ export default function LeaveBalances() {
 
   const editingType = editingBalance ? leaveTypeMap[String(editingBalance.leaveTypeId)] : null
   const editingEmployee = editingBalance ? employeeMap[String(editingBalance.employeeId)] : null
+  const addError = addState.error ? getApiErrorMessage(addState.error) : ''
 
   return (
     <div className="space-y-6">
       <div className="flex flex-col justify-between gap-3 lg:flex-row lg:items-end">
         <div className="min-w-0">
-          <h1 className="text-xl font-black sm:text-2xl">Leave Balances</h1>
-          <p className="text-sm text-app-muted">Set yearly leave days for every type and track how much each employee has used.</p>
+          <h1 className="text-xl font-black sm:text-2xl">{t('balances.title')}</h1>
+          <p className="text-sm text-app-muted">{t('balances.subtitle')}</p>
         </div>
         <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap lg:justify-end">
           <Button icon={FiUsers} onClick={() => setAssignOpen(true)} disabled={activeTypes.length === 0} className="w-full sm:w-auto">
-            Assign to All Employees
+            {t('balances.assignAll')}
           </Button>
           <Button variant="outline" icon={FiUser} onClick={openSingleModal} disabled={activeTypes.length === 0} className="w-full sm:w-auto">
-            Add for One Employee
+            {t('balances.addOne')}
           </Button>
         </div>
       </div>
@@ -176,11 +181,11 @@ export default function LeaveBalances() {
       <LeaveSubNav />
 
       <section className="space-y-3">
-        <h2 className="text-base font-black">Leave types</h2>
+        <h2 className="text-base font-black">{t('balances.typesHeading')}</h2>
         {leaveTypesLoading ? (
           <Loader />
         ) : sortedTypes.length === 0 ? (
-          <EmptyState title="No leave types yet" description="Create leave types in the Leave Types tab first." />
+          <EmptyState title={t('balances.noTypesTitle')} description={t('balances.noTypesBody')} />
         ) : (
           <div className="hide-scrollbar flex snap-x gap-3 overflow-x-auto pb-1">
             {sortedTypes.map((type) => (
@@ -197,14 +202,14 @@ export default function LeaveBalances() {
         </div>
 
         {isError && <p className="mb-3 rounded-lg bg-danger/10 p-3 text-sm font-semibold text-danger">{getApiErrorMessage(error)}</p>}
-        {isFetching && !isLoading && <p className="mb-3 text-sm font-semibold text-app-muted">Refreshing balances...</p>}
+        {isFetching && !isLoading && <p className="mb-3 text-sm font-semibold text-app-muted">{t('balances.refreshing')}</p>}
 
         <Table
           rows={rows}
           columns={[
             {
               key: 'employee',
-              header: 'Employee',
+              header: t('balances.columns.employee'),
               render: (row) => {
                 const employee = employeeMap[String(row.employeeId)]
                 return employee ? <EmployeeInfo employee={employee} employeeId={row.employeeId} /> : <EmployeeFetchedCell employeeId={row.employeeId} />
@@ -212,10 +217,10 @@ export default function LeaveBalances() {
             },
             {
               key: 'leaveType',
-              header: 'Leave Type',
+              header: t('balances.columns.leaveType'),
               render: (row) => {
                 const type = leaveTypeMap[String(row.leaveTypeId)]
-                if (!type) return leaveTypesLoading ? 'Loading...' : `Type #${row.leaveTypeId}`
+                if (!type) return leaveTypesLoading ? t('common:actions.loading') : t('common.typeFallback', { id: row.leaveTypeId })
                 return (
                   <div className={type.status === 'Active' ? '' : 'opacity-70'}>
                     <p className="font-bold">{type.name}</p>
@@ -223,7 +228,7 @@ export default function LeaveBalances() {
                       {type.code}
                       {type.status !== 'Active' && (
                         <span className="inline-flex items-center gap-1 rounded-full bg-app-muted/15 px-2 py-0.5 font-bold">
-                          <FiEyeOff className="h-3 w-3" /> Hidden
+                          <FiEyeOff className="h-3 w-3" /> {t('common.hidden')}
                         </span>
                       )}
                     </p>
@@ -231,37 +236,37 @@ export default function LeaveBalances() {
                 )
               }
             },
-            { key: 'used', header: 'Used', render: (row) => `${row.usedDays} days` },
+            { key: 'used', header: t('balances.columns.used'), render: (row) => t('common.days', { count: row.usedDays }) },
             {
               key: 'balance',
-              header: 'Remaining',
+              header: t('balances.columns.remaining'),
               render: (row) => (
                 <div className="min-w-[11rem] space-y-1">
                   <ProgressBar value={row.usedDays} max={row.allocatedDays || 1} tone={row.remainingDays <= 0 ? 'warning' : 'success'} />
                   <p className="text-xs font-semibold text-app-muted">
-                    {row.remainingDays} of {row.allocatedDays} days left
+                    {t('balances.daysLeft', { remaining: row.remainingDays, allocated: row.allocatedDays })}
                   </p>
                 </div>
               )
             },
             {
               key: 'actions',
-              header: 'Actions',
-              render: (row) => <Button variant="info" icon={FiEdit} className="px-3" onClick={() => openEditModal(row)} aria-label="Adjust days" />
+              header: t('balances.columns.actions'),
+              render: (row) => <Button variant="info" icon={FiEdit} className="px-3" onClick={() => openEditModal(row)} aria-label={t('balances.adjustAria')} />
             }
           ]}
         />
 
         <div className="mt-4 flex flex-col gap-3 text-sm text-app-muted sm:flex-row sm:items-center sm:justify-between">
           <span>
-            Page {pagination.page} of {pagination.total_pages} - Showing {rows.length} of {pagination.total}
+            {t('common:pagination.summary', { page: pagination.page, totalPages: pagination.total_pages, shown: rows.length, total: pagination.total })}
           </span>
           <div className="flex flex-wrap gap-2">
             <Button variant="ghost" disabled={page <= 1 || isFetching} onClick={() => setPage((current) => Math.max(1, current - 1))}>
-              Previous
+              {t('common:actions.previous')}
             </Button>
             <Button variant="ghost" disabled={page >= pagination.total_pages || isFetching} onClick={() => setPage((current) => current + 1)}>
-              Next
+              {t('common:actions.next')}
             </Button>
           </div>
         </div>
@@ -270,56 +275,56 @@ export default function LeaveBalances() {
       <AssignAllModal open={assignOpen} onClose={() => setAssignOpen(false)} activeTypes={activeTypes} assignment={assignment} defaultYear={Number(year)} />
 
       {/* Add a balance for one employee */}
-      <Modal open={modalOpen} title="Add Leave Balance for One Employee" onClose={() => setModalOpen(false)} className="max-w-lg">
+      <Modal open={modalOpen} title={t('balances.addModal.title')} onClose={() => setModalOpen(false)} className="max-w-lg">
         <form className="space-y-4" onSubmit={handleCreateSubmit}>
           <p className="rounded-lg bg-primary/5 p-3 text-xs text-app-muted">
-            Use this only for a single employee, for example a new joiner. To set up everyone together, use{' '}
-            <b className="text-app-text">Assign to All Employees</b>. The days come from the leave type's yearly quota.
+            <Trans i18nKey="balances.addModal.hint" ns="leave" components={{ b: <b className="text-app-text" /> }} />
           </p>
-          {getApiErrorMessage(addState.error) && (
-            <p className="rounded-lg bg-danger/10 p-3 text-sm font-semibold text-danger">{getApiErrorMessage(addState.error)}</p>
-          )}
+          {addError && <p className="rounded-lg bg-danger/10 p-3 text-sm font-semibold text-danger">{addError}</p>}
           <Select
-            label="Employee"
+            label={t('balances.addModal.employee')}
             value={form.employeeId}
             onChange={(event) => setForm({ ...form, employeeId: event.target.value })}
-            options={[{ value: '', label: employeesLoading ? 'Loading employees...' : 'Select employee' }, ...employeeOptions.slice(1)]}
+            options={[{ value: '', label: employeesLoading ? t('balances.loadingEmployees') : t('balances.selectEmployee') }, ...employeeOptions.slice(1)]}
             required
           />
           <Select
-            label="Leave Type"
+            label={t('balances.addModal.leaveType')}
             value={form.leaveTypeId}
             onChange={(event) => setForm({ ...form, leaveTypeId: event.target.value })}
-            options={[{ value: '', label: leaveTypesLoading ? 'Loading leave types...' : 'Select leave type' }, ...leaveTypeOptions]}
+            options={[{ value: '', label: leaveTypesLoading ? t('balances.loadingTypes') : t('balances.selectLeaveType') }, ...leaveTypeOptions]}
             required
           />
-          <Input label="Year" type="number" value={form.year} onChange={(event) => setForm({ ...form, year: event.target.value })} required />
+          <Input label={t('balances.addModal.year')} type="number" value={form.year} onChange={(event) => setForm({ ...form, year: event.target.value })} required />
           <div className="flex flex-col-reverse justify-end gap-2 sm:flex-row">
             <Button type="button" variant="ghost" onClick={() => setModalOpen(false)} className="w-full sm:w-auto">
-              Cancel
+              {t('common:actions.cancel')}
             </Button>
             <Button type="submit" disabled={addState.isLoading} className="w-full sm:w-auto">
-              Add Balance
+              {t('balances.addModal.submit')}
             </Button>
           </div>
         </form>
       </Modal>
 
       {/* Adjust days for one balance */}
-      <Modal open={Boolean(editingBalance)} title="Adjust Allocated Days" onClose={() => setEditingBalance(null)} className="max-w-md">
+      <Modal open={Boolean(editingBalance)} title={t('balances.adjust.title')} onClose={() => setEditingBalance(null)} className="max-w-md">
         <form className="space-y-4" onSubmit={handleUpdateSubmit}>
           {editingBalance && (
             <div className="rounded-lg border border-primary/10 bg-app-bg p-3 text-sm">
-              <p className="font-bold">{editingEmployee?.name || `Employee #${editingBalance.employeeId}`}</p>
+              <p className="font-bold">{editingEmployee?.name || t('common.employeeFallback', { id: editingBalance.employeeId })}</p>
               <p className="text-xs text-app-muted">
-                {editingType ? `${editingType.name} (${editingType.code})` : `Type #${editingBalance.leaveTypeId}`} - {editingBalance.year} - Used{' '}
-                {editingBalance.usedDays} days
+                {t('balances.adjust.summary', {
+                  type: editingType ? `${editingType.name} (${editingType.code})` : t('common.typeFallback', { id: editingBalance.leaveTypeId }),
+                  year: editingBalance.year,
+                  used: t('common.days', { count: editingBalance.usedDays })
+                })}
               </p>
             </div>
           )}
           {updateState.error && <p className="rounded-lg bg-danger/10 p-3 text-sm font-semibold text-danger">{getApiErrorMessage(updateState.error)}</p>}
           <Input
-            label="Total days for this year"
+            label={t('balances.adjust.totalDays')}
             type="number"
             min="0"
             step="0.5"
@@ -329,10 +334,10 @@ export default function LeaveBalances() {
           />
           <div className="flex flex-col-reverse justify-end gap-2 sm:flex-row">
             <Button type="button" variant="ghost" onClick={() => setEditingBalance(null)} className="w-full sm:w-auto">
-              Cancel
+              {t('common:actions.cancel')}
             </Button>
             <Button type="submit" disabled={updateState.isLoading} className="w-full sm:w-auto">
-              Save Changes
+              {t('common.saveChanges')}
             </Button>
           </div>
         </form>

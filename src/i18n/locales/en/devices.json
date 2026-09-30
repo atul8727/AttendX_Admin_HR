@@ -1,0 +1,69 @@
+{
+  "title": "Device Management",
+  "subtitle": {
+    "requests": "Review device change requests raised by employees and approve or reject them here.",
+    "history": "View employee-wise registered devices, status, and login history in one place."
+  },
+  "tabs": {
+    "pending": "Pending",
+    "approved": "Approved",
+    "rejected": "Rejected",
+    "history": "History"
+  },
+  "summary": {
+    "requests_one": "{{count}} request",
+    "requests_other": "{{count}} requests",
+    "employees_one": "{{count}} employee",
+    "employees_other": "{{count}} employees"
+  },
+  "loadFailed": "Could not load the data.",
+  "employeeFallback": "Employee #{{id}}",
+  "idLabel": "ID: {{id}}",
+  "columns": {
+    "employee": "Employee",
+    "currentVsRequested": "Current vs Requested",
+    "requestedAt": "Requested At",
+    "status": "Status",
+    "actions": "Actions",
+    "code": "Code",
+    "deviceSummary": "Device Summary",
+    "employeeStatus": "Employee Status"
+  },
+  "compare": {
+    "current": "Current",
+    "requested": "Requested",
+    "to": "to"
+  },
+  "summaryCell": {
+    "loading": "Loading devices...",
+    "devices_one": "{{count}} device",
+    "devices_other": "{{count}} devices",
+    "active_one": "{{count}} active device",
+    "active_other": "{{count}} active devices",
+    "latest": "Latest: {{name}}"
+  },
+  "viewHistory": "View History",
+  "reject": {
+    "title": "Reject Device Change Request",
+    "reasonLabel": "Rejection Reason",
+    "reasonPlaceholder": "Could not verify the employee identity",
+    "submit": "Reject Request"
+  },
+  "history": {
+    "title": "Employee Device History",
+    "noEmail": "No email",
+    "found_one": "{{count}} device found",
+    "found_other": "{{count}} devices found",
+    "hint": "Registered devices, status, platform, and login history.",
+    "loadError": "Could not load the device history.",
+    "emptyTitle": "No device history found",
+    "emptyBody": "No registered devices were found for this employee yet."
+  },
+  "card": {
+    "unknown": "Unknown device",
+    "deviceId": "Device ID",
+    "deviceModel": "Device Model",
+    "registeredAt": "Registered At",
+    "lastLoginAt": "Last Login At"
+  }
+}

@@ -1,0 +1,45 @@
+{
+  "list": {
+    "title": "Holiday Management",
+    "subtitle": "Plan and manage company-wide holidays for {{year}}.",
+    "add": "Add Holiday",
+    "stats": {
+      "total": "Total Holidays",
+      "year": "Year {{year}}",
+      "fullDay": "Full Day",
+      "halfDay": "Half Day"
+    },
+    "searchPlaceholder": "Search holiday by name...",
+    "refreshing": "Refreshing holidays...",
+    "editAria": "Edit {{name}}",
+    "deleteAria": "Delete {{name}}",
+    "columns": {
+      "date": "Date",
+      "holiday": "Holiday",
+      "type": "Type",
+      "halfDayPeriod": "Half Day Period",
+      "status": "Status",
+      "actions": "Actions"
+    }
+  },
+  "form": {
+    "addTitle": "Add Holiday",
+    "editTitle": "Edit Holiday",
+    "date": "Holiday Date",
+    "type": "Holiday Type",
+    "name": "Holiday Name",
+    "namePlaceholder": "Gandhi Jayanti",
+    "halfDayPeriod": "Half Day Period",
+    "save": "Save Changes",
+    "create": "Create Holiday",
+    "duplicate": "\"{{name}}\" is already added on {{date}}. Choose another date or edit that holiday."
+  },
+  "delete": {
+    "title": "Delete Holiday",
+    "confirm": "Are you sure you want to delete <b>{{name}}</b> on <b>{{date}}</b>? This action cannot be undone.",
+    "submit": "Delete"
+  },
+  "errors": {
+    "duplicateDate": "A holiday already exists on this date. Please choose a different date or edit the existing holiday."
+  }
+}

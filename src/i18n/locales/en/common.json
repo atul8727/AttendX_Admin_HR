@@ -1,0 +1,51 @@
+{
+  "company": { "tagline": "Smart Attendance & Workforce Management", "address": "Noida, Uttar Pradesh, India" },
+  "language": {
+    "label": "Language"
+  },
+  "actions": {
+    "save": "Save",
+    "cancel": "Cancel",
+    "close": "Close",
+    "approve": "Approve",
+    "reject": "Reject",
+    "view": "View",
+    "previous": "Previous",
+    "next": "Next",
+    "logout": "Logout",
+    "loggingOut": "Logging out...",
+    "loading": "Loading...",
+    "refreshing": "Refreshing..."
+  },
+  "theme": {
+    "toggle": "Toggle theme"
+  },
+  "topbar": {
+    "adminOverview": "Admin / Overview",
+    "openNavigation": "Open navigation",
+    "notifications": "Notifications",
+    "defaultAdminName": "Admin"
+  },
+  "sidebar": {
+    "brand": "AttendX Admin",
+    "close": "Close sidebar",
+    "collapse": "Collapse sidebar",
+    "closeNavigation": "Close navigation"
+  },
+  "pagination": {
+    "summary": "Page {{page}} of {{totalPages}} - Showing {{shown}} of {{total}}"
+  },
+  "table": {
+    "noRecords": "No records found"
+  },
+  "empty": {
+    "title": "Nothing here yet",
+    "description": "Try changing filters or adding a record."
+  },
+  "geolocation": {
+    "unsupported": "Location is not available in this browser.",
+    "found": "Location found (accuracy ~{{accuracy}} m).",
+    "denied": "Location permission was denied. Allow it in your browser settings.",
+    "failed": "Could not get your location. Please try again."
+  }
+}

@@ -1,3 +1,4 @@
+import { useTranslation } from 'react-i18next'
 import { NavLink } from 'react-router-dom'
 
 // Leave module ke teen pages (Requests / Types / Balances) ke beech switch karne ke liye
@@ -5,12 +6,13 @@ import { NavLink } from 'react-router-dom'
 // isliye Leave Types aur Leave Balances pages UI me kahin dikhte nahi the (rasta hi nahi tha),
 // jabki unke components + APIs pehle se hi bane hue the.
 const LEAVE_NAV_ITEMS = [
-  { label: 'Requests', path: '/leave/requests' },
-  { label: 'Leave Types', path: '/leave/types' },
-  { label: 'Balances', path: '/leave/balances' }
+  { labelKey: 'nav.requests', path: '/leave/requests' },
+  { labelKey: 'nav.types', path: '/leave/types' },
+  { labelKey: 'nav.balances', path: '/leave/balances' }
 ]
 
 export default function LeaveSubNav() {
+  const { t } = useTranslation('leave')
   return (
     <div className="hide-scrollbar flex max-w-full overflow-x-auto rounded-lg border border-primary/15 bg-app-bg p-1">
       {LEAVE_NAV_ITEMS.map((item) => (
@@ -23,7 +25,7 @@ export default function LeaveSubNav() {
             }`
           }
         >
-          {item.label}
+          {t(item.labelKey)}
         </NavLink>
       ))}
     </div>

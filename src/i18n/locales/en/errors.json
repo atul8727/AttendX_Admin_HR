@@ -1,0 +1,7 @@
+{
+  "sessionExpired": "Session expired. Please sign in again.",
+  "generic": "Something went wrong. Please try again.",
+  "boundaryTitle": "Something went wrong",
+  "boundaryBody": "There was an error while loading this page. Please try going back to the dashboard.",
+  "goToDashboard": "Go to Dashboard"
+}

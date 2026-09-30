@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import { FiCheck, FiEye, FiX } from 'react-icons/fi'
 import Avatar from '../../components/ui/Avatar.jsx'
 import Badge from '../../components/ui/Badge.jsx'
@@ -9,31 +10,42 @@ import Modal from '../../components/ui/Modal.jsx'
 import Table from '../../components/ui/Table.jsx'
 import LeaveSubNav from './LeaveSubNav.jsx'
 import { LEAVE_REQUEST_TABS } from '../../constants/leave.js'
+import { getApiErrorMessage } from '../../lib/apiError.js'
+import { useFormatters } from '../../lib/format.js'
 import { useGetEmployeeQuery } from '../../store/api/employeesApi.js'
 import { useApproveLeaveRequestMutation, useGetLeaveTypesQuery, useGetLeaveRequestsQuery, useRejectLeaveRequestMutation } from '../../store/api/leaveApi.js'
 
-function getApiErrorMessage(error) {
-  return error?.data?.message || error?.error || error?.message || ''
-}
+// Tab values stable hain (API status = tab.toUpperCase()). Label status:<lowercase> se aata hai (status:pending, status:all ...).
 
-function formatDisplayDate(value) {
-  if (!value) return '-'
-  return new Intl.DateTimeFormat('en-IN', { day: '2-digit', month: 'short', year: 'numeric' }).format(new Date(`${value}T00:00:00`))
-}
-
-function formatDateTime(value) {
-  if (!value) return '-'
-  return new Intl.DateTimeFormat('en-IN', { dateStyle: 'medium', timeStyle: 'short' }).format(new Date(value))
+// Date-only (YYYY-MM-DD) aur date-time dono ko current language me dikhata hai.
+// Khaali ya kharab date par '-' (Intl kharab date par RangeError deta hai).
+function useLeaveDates() {
+  const fmt = useFormatters()
+  return {
+    formatDisplayDate: (value) => {
+      if (!value) return '-'
+      const date = new Date(`${value}T00:00:00`)
+      return Number.isNaN(date.getTime()) ? '-' : fmt.date(date, { day: '2-digit', month: 'short', year: 'numeric' })
+    },
+    formatDateTime: (value) => {
+      if (!value) return '-'
+      const date = new Date(value)
+      return Number.isNaN(date.getTime()) ? '-' : fmt.dateTime(date)
+    }
+  }
 }
 
 function EmployeeCell({ employeeId }) {
+  const { t } = useTranslation('leave')
   const { data: employee, isFetching } = useGetEmployeeQuery(employeeId, { skip: !employeeId })
   return (
     <div className="flex items-center gap-3">
       <Avatar name={employee?.name || String(employeeId)} />
       <div>
-        <p className="font-bold">{isFetching && !employee ? 'Loading...' : employee?.name || `Employee #${employeeId}`}</p>
-        <p className="text-xs text-app-muted">{employee?.code || `ID: ${employeeId}`}</p>
+        <p className="font-bold">
+          {isFetching && !employee ? t('common:actions.loading') : employee?.name || t('common.employeeFallback', { id: employeeId })}
+        </p>
+        <p className="text-xs text-app-muted">{employee?.code || t('common.idLabel', { id: employeeId })}</p>
       </div>
     </div>
   )
@@ -49,6 +61,8 @@ function DetailItem({ label, value }) {
 }
 
 export default function LeaveRequests() {
+  const { t } = useTranslation('leave')
+  const { formatDisplayDate, formatDateTime } = useLeaveDates()
   const [tab, setTab] = useState('Pending')
   const [page, setPage] = useState(1)
   const [rejectingId, setRejectingId] = useState(null)
@@ -68,13 +82,18 @@ export default function LeaveRequests() {
 
   const rows = useMemo(() => data?.items || [], [data])
   const pagination = data?.pagination || { page: 1, limit, total: rows.length, total_pages: 1 }
-  const queryError = getApiErrorMessage(error)
-  const rejectError = getApiErrorMessage(rejectState.error)
+  const queryError = isError ? getApiErrorMessage(error) : ''
+  const rejectError = rejectState.error ? getApiErrorMessage(rejectState.error) : ''
   const leaveTypeMap = useMemo(() => Object.fromEntries(leaveTypes.map((type) => [String(type.id), type])), [leaveTypes])
 
   function leaveTypeLabel(id) {
     const type = leaveTypeMap[String(id)]
-    return type ? `${type.name} (${type.code})` : `Type #${id}`
+    return type ? `${type.name} (${type.code})` : t('common.typeFallback', { id })
+  }
+
+  // API se durationType 'HALF_DAY' / 'FULL_DAY' aata hai; label translated status keys se banta hai.
+  function durationLabel(row) {
+    return row.durationType === 'HALF_DAY' ? t('status:halfDay') : t('status:fullDay')
   }
 
   async function handleApprove(id) {
@@ -107,8 +126,8 @@ export default function LeaveRequests() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-xl font-black sm:text-2xl">Leave Requests</h1>
-        <p className="text-sm text-app-muted">Review employee leave applications and approve or reject them.</p>
+        <h1 className="text-xl font-black sm:text-2xl">{t('requests.title')}</h1>
+        <p className="text-sm text-app-muted">{t('requests.subtitle')}</p>
       </div>
 
       <LeaveSubNav />
@@ -119,41 +138,42 @@ export default function LeaveRequests() {
             {LEAVE_REQUEST_TABS.map((item) => (
               <button
                 key={item}
+                type="button"
                 onClick={() => setTab(item)}
                 className={`min-h-10 shrink-0 rounded-md px-4 text-sm font-bold transition ${
                   tab === item ? 'bg-primary text-white shadow-soft' : 'text-primary hover:bg-primary/10'
                 }`}
               >
-                {item}
+                {t(`status:${item.toLowerCase()}`)}
               </button>
             ))}
           </div>
-          <p className="text-sm font-semibold text-app-muted">{pagination.total} request(s)</p>
+          <p className="text-sm font-semibold text-app-muted">{t('requests.summary', { count: pagination.total })}</p>
         </div>
 
         {isError && <p className="mb-3 rounded-lg bg-danger/10 p-3 text-sm font-semibold text-danger">{queryError}</p>}
-        {isFetching && !isLoading && <p className="mb-3 text-sm font-semibold text-app-muted">Refreshing requests...</p>}
+        {isFetching && !isLoading && <p className="mb-3 text-sm font-semibold text-app-muted">{t('requests.refreshing')}</p>}
 
         <Table
           rows={rows}
           onRowClick={setViewingRequest}
           columns={[
-            { key: 'employee', header: 'Employee', render: (row) => <EmployeeCell employeeId={row.employeeId} /> },
-            { key: 'leaveType', header: 'Leave Type', render: (row) => leaveTypeLabel(row.leaveTypeId) },
+            { key: 'employee', header: t('requests.columns.employee'), render: (row) => <EmployeeCell employeeId={row.employeeId} /> },
+            { key: 'leaveType', header: t('requests.columns.leaveType'), render: (row) => leaveTypeLabel(row.leaveTypeId) },
             {
               key: 'dates',
-              header: 'From - To',
+              header: t('requests.columns.dates'),
               render: (row) => (
                 <span>
                   {formatDisplayDate(row.startDate)} - {formatDisplayDate(row.endDate)}
                 </span>
               )
             },
-            { key: 'totalDays', header: 'Days', render: (row) => `${row.totalDays} (${row.durationTypeLabel})` },
-            { key: 'status', header: 'Status', render: (row) => <Badge status={row.statusLabel} /> },
+            { key: 'totalDays', header: t('requests.columns.days'), render: (row) => `${row.totalDays} (${durationLabel(row)})` },
+            { key: 'status', header: t('requests.columns.status'), render: (row) => <Badge status={row.statusLabel} /> },
             {
               key: 'actions',
-              header: 'Actions',
+              header: t('requests.columns.actions'),
               render: (row) =>
                 row.status === 'PENDING' ? (
                   <div className="flex flex-wrap gap-2">
@@ -166,7 +186,7 @@ export default function LeaveRequests() {
                         handleApprove(row.id)
                       }}
                     >
-                      Approve
+                      {t('common:actions.approve')}
                     </Button>
                     <Button
                       variant="danger"
@@ -176,7 +196,7 @@ export default function LeaveRequests() {
                         openRejectModal(row.id)
                       }}
                     >
-                      Reject
+                      {t('common:actions.reject')}
                     </Button>
                   </div>
                 ) : (
@@ -188,7 +208,7 @@ export default function LeaveRequests() {
                       setViewingRequest(row)
                     }}
                   >
-                    View
+                    {t('common:actions.view')}
                   </Button>
                 )
             }
@@ -197,31 +217,31 @@ export default function LeaveRequests() {
 
         <div className="mt-4 flex flex-col gap-3 text-sm text-app-muted sm:flex-row sm:items-center sm:justify-between">
           <span>
-            Page {pagination.page} of {pagination.total_pages} - Showing {rows.length} of {pagination.total}
+            {t('common:pagination.summary', { page: pagination.page, totalPages: pagination.total_pages, shown: rows.length, total: pagination.total })}
           </span>
           <div className="flex flex-wrap gap-2">
             <Button variant="ghost" disabled={page <= 1 || isFetching} onClick={() => setPage((current) => Math.max(1, current - 1))}>
-              Previous
+              {t('common:actions.previous')}
             </Button>
             <Button
               variant="ghost"
               disabled={page >= pagination.total_pages || isFetching}
               onClick={() => setPage((current) => current + 1)}
             >
-              Next
+              {t('common:actions.next')}
             </Button>
           </div>
         </div>
       </Card>
 
-      <Modal open={Boolean(rejectingId)} title="Reject Leave Request" onClose={() => setRejectingId(null)}>
+      <Modal open={Boolean(rejectingId)} title={t('requests.reject.title')} onClose={() => setRejectingId(null)}>
         <form className="space-y-4" onSubmit={handleRejectSubmit}>
           {rejectError && <p className="rounded-lg bg-danger/10 p-3 text-sm font-semibold text-danger">{rejectError}</p>}
           <label className="block text-sm font-semibold text-app-text">
-            <span className="mb-1.5 block">Rejection Reason</span>
+            <span className="mb-1.5 block">{t('requests.reject.reasonLabel')}</span>
             <textarea
               className="min-h-24 w-full rounded-lg border border-primary/15 bg-app-bg px-3 py-2 text-app-text outline-none transition placeholder:text-app-muted focus:border-primary focus:ring-2 focus:ring-primary/20"
-              placeholder="Insufficient staffing on requested dates"
+              placeholder={t('requests.reject.reasonPlaceholder')}
               value={rejectReason}
               onChange={(event) => setRejectReason(event.target.value)}
               required
@@ -229,16 +249,16 @@ export default function LeaveRequests() {
           </label>
           <div className="flex justify-end gap-2">
             <Button type="button" variant="ghost" onClick={() => setRejectingId(null)}>
-              Cancel
+              {t('common:actions.cancel')}
             </Button>
             <Button type="submit" variant="danger" disabled={rejectState.isLoading}>
-              Reject Request
+              {t('requests.reject.submit')}
             </Button>
           </div>
         </form>
       </Modal>
 
-      <Modal open={Boolean(viewingRequest)} title="Leave Request Details" onClose={() => setViewingRequest(null)} className="max-w-2xl">
+      <Modal open={Boolean(viewingRequest)} title={t('requests.details.title')} onClose={() => setViewingRequest(null)} className="max-w-2xl">
         {viewingRequest && (
           <div className="space-y-5">
             <div className="flex flex-wrap items-center gap-4 rounded-lg bg-primary/5 p-4">
@@ -246,21 +266,21 @@ export default function LeaveRequests() {
               <Badge status={viewingRequest.statusLabel} />
             </div>
             <div className="grid gap-3 md:grid-cols-2">
-              <DetailItem label="Leave Type" value={leaveTypeLabel(viewingRequest.leaveTypeId)} />
-              <DetailItem label="Duration Type" value={viewingRequest.durationTypeLabel} />
-              <DetailItem label="Start Date" value={formatDisplayDate(viewingRequest.startDate)} />
-              <DetailItem label="End Date" value={formatDisplayDate(viewingRequest.endDate)} />
-              <DetailItem label="Total Days" value={viewingRequest.totalDays} />
-              <DetailItem label="Reason" value={viewingRequest.reason} />
-              <DetailItem label="Applied At" value={formatDateTime(viewingRequest.appliedAt)} />
-              <DetailItem label="Reviewed At" value={formatDateTime(viewingRequest.reviewedAt)} />
+              <DetailItem label={t('requests.details.leaveType')} value={leaveTypeLabel(viewingRequest.leaveTypeId)} />
+              <DetailItem label={t('requests.details.durationType')} value={durationLabel(viewingRequest)} />
+              <DetailItem label={t('requests.details.startDate')} value={formatDisplayDate(viewingRequest.startDate)} />
+              <DetailItem label={t('requests.details.endDate')} value={formatDisplayDate(viewingRequest.endDate)} />
+              <DetailItem label={t('requests.details.totalDays')} value={viewingRequest.totalDays} />
+              <DetailItem label={t('requests.details.reason')} value={viewingRequest.reason} />
+              <DetailItem label={t('requests.details.appliedAt')} value={formatDateTime(viewingRequest.appliedAt)} />
+              <DetailItem label={t('requests.details.reviewedAt')} value={formatDateTime(viewingRequest.reviewedAt)} />
               {viewingRequest.status === 'REJECTED' && (
-                <DetailItem label="Rejection Reason" value={viewingRequest.rejectionReason} />
+                <DetailItem label={t('requests.details.rejectionReason')} value={viewingRequest.rejectionReason} />
               )}
             </div>
             <div className="flex justify-end">
               <Button type="button" variant="ghost" onClick={() => setViewingRequest(null)}>
-                Close
+                {t('common:actions.close')}
               </Button>
             </div>
           </div>

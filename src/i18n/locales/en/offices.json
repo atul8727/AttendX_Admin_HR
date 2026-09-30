@@ -1,0 +1,117 @@
+{
+  "list": {
+    "title": "Office Management",
+    "subtitle": "Manage offices, geofence radius and weekly off in one place.",
+    "add": "Add Office",
+    "stats": {
+      "total": "Total Offices",
+      "avgRadius": "Avg Geofence Radius",
+      "timezones": "Timezones"
+    },
+    "searchPlaceholder": "Search by name, timezone or ID...",
+    "showing": "Showing {{shown}} of {{total}}",
+    "refreshAria": "Refresh offices",
+    "retry": "Retry",
+    "loadFailed": "Could not load offices.",
+    "emptyTitle": "No offices yet",
+    "emptyBody": "Add your first office to set up its geofence and weekly off.",
+    "addFirst": "Add your first office",
+    "noMatchTitle": "No offices found",
+    "noMatchBody": "Try changing the search text.",
+    "notice": {
+      "updated": "Office updated.",
+      "created": "New office created.",
+      "deleted": "{{name}} deleted."
+    }
+  },
+  "card": {
+    "geofence": "Geofence",
+    "gpsAccuracy": "GPS Acc.",
+    "weekOff": "Week off",
+    "map": "Map",
+    "view": "View",
+    "editAria": "Edit {{name}}",
+    "deleteAria": "Delete {{name}}"
+  },
+  "details": {
+    "title": "Office Details",
+    "officeId": "Office ID: {{id}}",
+    "openInMaps": "Open in Maps",
+    "latitude": "Latitude",
+    "longitude": "Longitude",
+    "allowedRadius": "Allowed Radius",
+    "maxGpsAccuracy": "Max GPS Accuracy",
+    "weeklyOff": "Weekly Off",
+    "timezone": "Timezone",
+    "createdAt": "Created At",
+    "updatedAt": "Updated At",
+    "edit": "Edit"
+  },
+  "form": {
+    "addTitle": "Add Office",
+    "editTitle": "Edit Office",
+    "name": "Office Name",
+    "namePlaceholder": "e.g. Noida Branch",
+    "location": "Location",
+    "locationHint": "Attendance will be verified within a geofence around this point.",
+    "useMyLocation": "Use my location",
+    "locating": "Locating...",
+    "latitude": "Latitude",
+    "longitude": "Longitude",
+    "checkOnMaps": "Check on Google Maps",
+    "allowedRadius": "Allowed Radius (meters)",
+    "allowedRadiusHint": "How far from the office check-in is allowed.",
+    "maxGpsAccuracy": "Max GPS Accuracy (meters)",
+    "maxGpsAccuracyHint": "Check-ins with worse GPS accuracy than this will be rejected.",
+    "weeklyOff": "Weekly Off",
+    "timezone": "Timezone",
+    "saving": "Saving...",
+    "saveChanges": "Save Changes",
+    "create": "Create Office",
+    "saveFailed": "Could not save the office. Please try again."
+  },
+  "delete": {
+    "title": "Delete Office",
+    "confirm": "Are you sure you want to delete {{name}}?",
+    "hint": "If employees are assigned to this office, reassign them to another branch first.",
+    "deleting": "Deleting...",
+    "submit": "Delete",
+    "failed": "Could not delete the office. Please try again."
+  },
+  "map": {
+    "hintPoint": "Drag the pin or click the map to change the location. The blue circle shows the allowed radius.",
+    "hintEmpty": "Click the map to choose a location."
+  },
+  "units": {
+    "meters": "{{value}} m",
+    "metersLong": "{{value}} meters"
+  },
+  "weekdays": {
+    "MON": "Monday",
+    "TUE": "Tuesday",
+    "WED": "Wednesday",
+    "THU": "Thursday",
+    "FRI": "Friday",
+    "SAT": "Saturday",
+    "SUN": "Sunday"
+  },
+  "weekdaysShort": {
+    "MON": "Mon",
+    "TUE": "Tue",
+    "WED": "Wed",
+    "THU": "Thu",
+    "FRI": "Fri",
+    "SAT": "Sat",
+    "SUN": "Sun"
+  },
+  "validation": {
+    "nameRequired": "Office name is required.",
+    "nameShort": "Office name must be at least 2 characters.",
+    "latitude": "Latitude must be between -90 and 90.",
+    "longitude": "Longitude must be between -180 and 180.",
+    "allowedRadius": "Radius must be between 1 and 10000 meters.",
+    "maxGpsAccuracy": "GPS accuracy must be between 1 and 1000 meters.",
+    "weeklyOff": "Select a weekly off.",
+    "timezone": "Select a timezone."
+  }
+}

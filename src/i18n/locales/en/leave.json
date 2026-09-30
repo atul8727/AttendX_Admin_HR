@@ -1,0 +1,175 @@
+{
+  "nav": {
+    "requests": "Requests",
+    "types": "Leave Types",
+    "balances": "Balances"
+  },
+  "common": {
+    "employeeFallback": "Employee #{{id}}",
+    "idLabel": "ID: {{id}}",
+    "typeFallback": "Type #{{id}}",
+    "days_one": "{{count}} day",
+    "days_other": "{{count}} days",
+    "perYear": "days / year",
+    "hidden": "Hidden",
+    "saveChanges": "Save Changes"
+  },
+  "requests": {
+    "title": "Leave Requests",
+    "subtitle": "Review employee leave applications and approve or reject them.",
+    "summary_one": "{{count}} request",
+    "summary_other": "{{count}} requests",
+    "refreshing": "Refreshing requests...",
+    "columns": {
+      "employee": "Employee",
+      "leaveType": "Leave Type",
+      "dates": "From - To",
+      "days": "Days",
+      "status": "Status",
+      "actions": "Actions"
+    },
+    "reject": {
+      "title": "Reject Leave Request",
+      "reasonLabel": "Rejection Reason",
+      "reasonPlaceholder": "Insufficient staffing on requested dates",
+      "submit": "Reject Request"
+    },
+    "details": {
+      "title": "Leave Request Details",
+      "leaveType": "Leave Type",
+      "durationType": "Duration Type",
+      "startDate": "Start Date",
+      "endDate": "End Date",
+      "totalDays": "Total Days",
+      "reason": "Reason",
+      "appliedAt": "Applied At",
+      "reviewedAt": "Reviewed At",
+      "rejectionReason": "Rejection Reason"
+    }
+  },
+  "types": {
+    "title": "Leave Types",
+    "subtitle": "Configure the leave categories employees can apply for. Only active types are visible to employees.",
+    "assignAll": "Assign to All Employees",
+    "add": "Add Type",
+    "progress": {
+      "scanning": "Checking employees...",
+      "assigning": "Assigning leave to employees..."
+    },
+    "refreshing": "Refreshing leave types...",
+    "columns": {
+      "type": "Type",
+      "code": "Code",
+      "annualQuota": "Annual Quota",
+      "status": "Status",
+      "employeeView": "Employee View",
+      "actions": "Actions"
+    },
+    "visible": "Visible",
+    "hidden": "Hidden",
+    "activate": "Activate",
+    "deactivate": "Deactivate",
+    "editAria": "Edit {{name}}",
+    "form": {
+      "addTitle": "Add Leave Type",
+      "editTitle": "Edit Leave Type",
+      "name": "Leave Type Name",
+      "namePlaceholder": "Casual Leave",
+      "code": "Code",
+      "codePlaceholder": "CL",
+      "defaultAnnualDays": "Default Annual Days",
+      "assignToAll": "Assign to all employees now",
+      "assignToAllHint": "All active employees will get this leave type for {{year}}.",
+      "create": "Create Leave Type"
+    },
+    "deactivateModal": {
+      "title": "Deactivate Leave Type?",
+      "body": "<b>{{name}}</b> will be hidden from employees and they will not be able to apply for it. Existing balances and history are kept, and everything reappears when you activate it again.",
+      "confirm": "Yes, Deactivate"
+    },
+    "notice": {
+      "created": "{{name}} created.",
+      "assignFailed_one": "{{label}}: {{count}} assignment failed. Use \"Assign to All\" to retry.",
+      "assignFailed_other": "{{label}}: {{count}} assignments failed. Use \"Assign to All\" to retry.",
+      "alreadyAssigned_one": "{{label}} is already assigned to all {{count}} employee.",
+      "alreadyAssigned_other": "{{label}} is already assigned to all {{count}} employees.",
+      "assigned_one": "{{label}} assigned to {{count}} employee.",
+      "assigned_other": "{{label}} assigned to {{count}} employees.",
+      "assignError": "Assignment failed.",
+      "activated": "{{name}} activated. Employees can now see it.",
+      "deactivated": "{{name}} deactivated. It is now hidden from employees.",
+      "statusFailed": "Could not update the status."
+    }
+  },
+  "balances": {
+    "title": "Leave Balances",
+    "subtitle": "Set yearly leave days for every type and track how much each employee has used.",
+    "assignAll": "Assign to All Employees",
+    "addOne": "Add for One Employee",
+    "typesHeading": "Leave types",
+    "noTypesTitle": "No leave types yet",
+    "noTypesBody": "Create leave types in the Leave Types tab first.",
+    "refreshing": "Refreshing balances...",
+    "loadingEmployees": "Loading employees...",
+    "loadingTypes": "Loading leave types...",
+    "allEmployees": "All Employees",
+    "selectEmployee": "Select employee",
+    "selectLeaveType": "Select leave type",
+    "typeOption": "{{name}} ({{code}}) - {{days}} / year",
+    "columns": {
+      "employee": "Employee",
+      "leaveType": "Leave Type",
+      "used": "Used",
+      "remaining": "Remaining",
+      "actions": "Actions"
+    },
+    "daysLeft": "{{remaining}} of {{allocated}} days left",
+    "adjustAria": "Adjust days",
+    "addModal": {
+      "title": "Add Leave Balance for One Employee",
+      "hint": "Use this only for a single employee, for example a new joiner. To set up everyone together, use <b>Assign to All Employees</b>. The days come from the leave type's yearly quota.",
+      "employee": "Employee",
+      "leaveType": "Leave Type",
+      "year": "Year",
+      "submit": "Add Balance"
+    },
+    "adjust": {
+      "title": "Adjust Allocated Days",
+      "summary": "{{type}} - {{year}} - Used {{used}}",
+      "totalDays": "Total days for this year"
+    }
+  },
+  "assign": {
+    "title": "Set Up Leave Balances for All Employees",
+    "steps": "<b>Step 1:</b> Choose the year. <b>Step 2:</b> Tick the leave types and set the days per year for each. <b>Step 3:</b> Click Assign.",
+    "note": "Every active employee gets these balances. Employees who already have one are skipped, so it is safe to run again.",
+    "year": "Year",
+    "typesHeading": "Leave types and yearly days",
+    "selectAll": "Select all",
+    "clearAll": "Clear all",
+    "noActive": "There are no active leave types. Create or activate one in the Leave Types tab first.",
+    "code": "Code: {{code}}",
+    "daysAria": "{{name}} days per year",
+    "updateExisting": "Also update existing balances",
+    "updateExistingHint": "Employees who already have a balance will be changed to the days above. Days already used are kept.",
+    "phase": {
+      "scanning": "Checking employees and existing balances...",
+      "assigning": "Assigning...",
+      "completed": "Completed"
+    },
+    "stats": {
+      "created": "Newly assigned",
+      "updated": "Updated",
+      "alreadyAssigned": "Already assigned",
+      "failed": "Failed"
+    },
+    "done_one": "Done. {{count}} employee now has their leave balances.",
+    "done_other": "Done. {{count}} employees now have their leave balances.",
+    "failedTitle": "Some assignments failed.",
+    "retryHint": "Run it again and only the missing ones will be processed.",
+    "submit": "Assign to All Employees",
+    "running": "Assigning...",
+    "runAgain": "Run Again",
+    "requestFailed": "Request failed (status {{status}})"
+  }
+}

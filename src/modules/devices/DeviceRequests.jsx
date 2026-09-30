@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import { FiCheck, FiClock, FiEye, FiSmartphone, FiX } from 'react-icons/fi'
 import Avatar from '../../components/ui/Avatar.jsx'
 import Badge from '../../components/ui/Badge.jsx'
@@ -7,6 +8,8 @@ import Card from '../../components/ui/Card.jsx'
 import Loader from '../../components/ui/Loader.jsx'
 import Modal from '../../components/ui/Modal.jsx'
 import Table from '../../components/ui/Table.jsx'
+import { getApiErrorMessage } from '../../lib/apiError.js'
+import { useFormatters } from '../../lib/format.js'
 import { useGetEmployeeQuery, useGetEmployeesQuery } from '../../store/api/employeesApi.js'
 import {
   useApproveDeviceChangeRequestMutation,
@@ -15,43 +18,48 @@ import {
   useRejectDeviceChangeRequestMutation
 } from '../../store/api/devicesApi.js'
 
+// Tab values stable hain (API status = tab.toUpperCase()). Label devices:tabs.<lowercase> se aata hai.
 const TABS = ['Pending', 'Approved', 'Rejected', 'History']
 
-function formatDateTime(value) {
-  if (!value) return '-'
-  return new Intl.DateTimeFormat('en-IN', {
-    dateStyle: 'medium',
-    timeStyle: 'short'
-  }).format(new Date(value))
+// Date/time ko current language me format karta hai. Khaali ya kharab date par '-' (Intl kharab date par crash karta hai).
+function useDateTime() {
+  const fmt = useFormatters()
+  return (value) => {
+    if (!value) return '-'
+    const date = new Date(value)
+    return Number.isNaN(date.getTime()) ? '-' : fmt.dateTime(date)
+  }
 }
 
 function EmployeeCell({ employeeId }) {
+  const { t } = useTranslation('devices')
   const { data: employee, isFetching } = useGetEmployeeQuery(employeeId, { skip: !employeeId })
   return (
     <div className="flex items-center gap-3">
       <Avatar name={employee?.name || String(employeeId)} />
       <div>
-        <p className="font-bold">{isFetching && !employee ? 'Loading...' : employee?.name || `Employee #${employeeId}`}</p>
-        <p className="text-xs text-app-muted">{employee?.code || `ID: ${employeeId}`}</p>
+        <p className="font-bold">{isFetching && !employee ? t('common:actions.loading') : employee?.name || t('employeeFallback', { id: employeeId })}</p>
+        <p className="text-xs text-app-muted">{employee?.code || t('idLabel', { id: employeeId })}</p>
       </div>
     </div>
   )
 }
 
 function DeviceCompareCell({ employeeId, oldEmployeeDeviceId, newDeviceId, newDeviceModel, newPlatform }) {
+  const { t } = useTranslation('devices')
   const { data: devices } = useGetEmployeeDevicesQuery(employeeId, { skip: !employeeId })
   const oldDevice = devices?.find((device) => device.id === oldEmployeeDeviceId)
 
   return (
     <div className="grid min-w-[20rem] grid-cols-[1fr_auto_1fr] items-center gap-3">
       <div className="rounded-lg border border-primary/10 bg-app-bg p-3">
-        <p className="text-xs font-bold uppercase text-app-muted">Current</p>
+        <p className="text-xs font-bold uppercase text-app-muted">{t('compare.current')}</p>
         <p className="font-bold">{oldDevice?.deviceModel || oldDevice?.deviceId || '-'}</p>
         <p className="text-xs text-app-muted">{oldDevice?.platform || ''}</p>
       </div>
-      <span className="text-lg font-black text-primary">to</span>
+      <span className="text-lg font-black text-primary">{t('compare.to')}</span>
       <div className="rounded-lg border border-primary/10 bg-app-bg p-3">
-        <p className="text-xs font-bold uppercase text-app-muted">Requested</p>
+        <p className="text-xs font-bold uppercase text-app-muted">{t('compare.requested')}</p>
         <p className="font-bold">{newDeviceModel || newDeviceId || '-'}</p>
         <p className="text-xs text-app-muted">{newPlatform || ''}</p>
       </div>
@@ -68,19 +76,20 @@ function sortDevicesByActivity(devices = []) {
 }
 
 function DeviceHistorySummaryCell({ employeeId }) {
+  const { t } = useTranslation('devices')
   const { data: devices = [], isFetching } = useGetEmployeeDevicesQuery(employeeId, { skip: !employeeId })
   const activeCount = devices.filter((device) => device.status === 'Active').length
   const latestDevice = sortDevicesByActivity(devices)[0]
 
-  if (isFetching && !devices.length) return <p className="text-sm font-semibold text-app-muted">Loading devices...</p>
+  if (isFetching && !devices.length) return <p className="text-sm font-semibold text-app-muted">{t('summaryCell.loading')}</p>
 
   return (
-      <div className="min-w-0 space-y-1">
-      <p className="font-bold text-app-text">{devices.length} device(s)</p>
-      <p className="text-xs font-semibold text-app-muted">{activeCount} active device(s)</p>
+    <div className="min-w-0 space-y-1">
+      <p className="font-bold text-app-text">{t('summaryCell.devices', { count: devices.length })}</p>
+      <p className="text-xs font-semibold text-app-muted">{t('summaryCell.active', { count: activeCount })}</p>
       {latestDevice && (
         <p className="max-w-[14rem] truncate text-xs text-app-muted">
-          Latest: {latestDevice.deviceModel || latestDevice.deviceName || latestDevice.deviceId}
+          {t('summaryCell.latest', { name: latestDevice.deviceModel || latestDevice.deviceName || latestDevice.deviceId })}
         </p>
       )}
     </div>
@@ -88,7 +97,9 @@ function DeviceHistorySummaryCell({ employeeId }) {
 }
 
 function DeviceDetailCard({ device }) {
-  const title = device.deviceModel || device.deviceName || device.deviceId || 'Unknown device'
+  const { t } = useTranslation('devices')
+  const formatDateTime = useDateTime()
+  const title = device.deviceModel || device.deviceName || device.deviceId || t('card.unknown')
 
   return (
     <div className="rounded-lg border border-primary/10 bg-app-bg p-4">
@@ -111,7 +122,7 @@ function DeviceDetailCard({ device }) {
           <p className="mt-1 break-words text-sm font-semibold text-app-text">{device.id ?? '-'}</p>
         </div>
         <div className="rounded-lg bg-app-surface p-3">
-          <p className="text-xs font-bold uppercase text-app-muted">Device ID</p>
+          <p className="text-xs font-bold uppercase text-app-muted">{t('card.deviceId')}</p>
           <p className="mt-1 break-words text-sm font-semibold text-app-text">{device.deviceId || '-'}</p>
         </div>
         {/* <div className="rounded-lg bg-app-surface p-3">
@@ -119,15 +130,15 @@ function DeviceDetailCard({ device }) {
           <p className="mt-1 break-words text-sm font-semibold text-app-text">{device.deviceName || '-'}</p>
         </div> */}
         <div className="rounded-lg bg-app-surface p-3">
-          <p className="text-xs font-bold uppercase text-app-muted">Device Model</p>
+          <p className="text-xs font-bold uppercase text-app-muted">{t('card.deviceModel')}</p>
           <p className="mt-1 break-words text-sm font-semibold text-app-text">{device.deviceModel || '-'}</p>
         </div>
         <div className="rounded-lg bg-app-surface p-3">
-          <p className="text-xs font-bold uppercase text-app-muted">Registered At</p>
+          <p className="text-xs font-bold uppercase text-app-muted">{t('card.registeredAt')}</p>
           <p className="mt-1 text-sm font-semibold text-app-text">{formatDateTime(device.registeredAt)}</p>
         </div>
         <div className="rounded-lg bg-app-surface p-3">
-          <p className="text-xs font-bold uppercase text-app-muted">Last Login At</p>
+          <p className="text-xs font-bold uppercase text-app-muted">{t('card.lastLoginAt')}</p>
           <p className="mt-1 text-sm font-semibold text-app-text">{formatDateTime(device.lastLoginAt)}</p>
         </div>
       </div>
@@ -136,6 +147,7 @@ function DeviceDetailCard({ device }) {
 }
 
 function EmployeeDeviceHistoryModal({ employee, onClose }) {
+  const { t } = useTranslation('devices')
   const {
     data: devices = [],
     isLoading,
@@ -144,17 +156,17 @@ function EmployeeDeviceHistoryModal({ employee, onClose }) {
     error
   } = useGetEmployeeDevicesQuery(employee?.id, { skip: !employee?.id })
   const sortedDevices = sortDevicesByActivity(devices)
-  const errorMessage = error?.data?.message || error?.error || 'Device history load nahi ho payi.'
+  const errorMessage = getApiErrorMessage(error, t('history.loadError'))
 
   return (
-    <Modal open={Boolean(employee)} title="Employee Device History" onClose={onClose} className="max-w-4xl">
+    <Modal open={Boolean(employee)} title={t('history.title')} onClose={onClose} className="max-w-4xl">
       {employee && (
         <div className="mb-4 flex flex-wrap items-center gap-4 rounded-lg bg-primary/5 p-4">
           <Avatar name={employee.name} />
           <div className="min-w-0 flex-1">
             <h3 className="truncate text-lg font-black text-app-text sm:text-xl">{employee.name}</h3>
             <p className="text-sm font-semibold text-app-muted">
-              {employee.code} - {employee.email || 'No email'}
+              {employee.code} - {employee.email || t('history.noEmail')}
             </p>
           </div>
           <Badge status={employee.status} />
@@ -163,10 +175,10 @@ function EmployeeDeviceHistoryModal({ employee, onClose }) {
 
       <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
         <div>
-          <p className="text-sm font-bold text-app-text">{devices.length} device(s) found</p>
-          <p className="text-xs font-semibold text-app-muted">Registered devices, status, platform, and login history.</p>
+          <p className="text-sm font-bold text-app-text">{t('history.found', { count: devices.length })}</p>
+          <p className="text-xs font-semibold text-app-muted">{t('history.hint')}</p>
         </div>
-        {isFetching && !isLoading && <span className="text-xs font-bold text-app-muted">Refreshing...</span>}
+        {isFetching && !isLoading && <span className="text-xs font-bold text-app-muted">{t('common:actions.refreshing')}</span>}
       </div>
 
       {isError && <p className="mb-3 rounded-lg bg-danger/10 p-3 text-sm font-semibold text-danger">{errorMessage}</p>}
@@ -182,8 +194,8 @@ function EmployeeDeviceHistoryModal({ employee, onClose }) {
       ) : (
         <div className="rounded-lg border border-dashed border-primary/20 bg-app-bg p-8 text-center">
           <FiSmartphone className="mx-auto mb-3 h-8 w-8 text-primary" />
-          <p className="text-sm font-bold text-app-text">No device history found</p>
-          <p className="mt-1 text-sm text-app-muted">Is employee ke liye abhi koi registered device nahi mila.</p>
+          <p className="text-sm font-bold text-app-text">{t('history.emptyTitle')}</p>
+          <p className="mt-1 text-sm text-app-muted">{t('history.emptyBody')}</p>
         </div>
       )}
     </Modal>
@@ -191,6 +203,8 @@ function EmployeeDeviceHistoryModal({ employee, onClose }) {
 }
 
 export default function DeviceRequests() {
+  const { t } = useTranslation('devices')
+  const formatDateTime = useDateTime()
   const [tab, setTab] = useState('Pending')
   const [page, setPage] = useState(1)
   const [rejectingId, setRejectingId] = useState(null)
@@ -220,9 +234,9 @@ export default function DeviceRequests() {
   const loading = isHistoryTab ? employeesLoading : isLoading
   const fetching = isHistoryTab ? employeesFetching : isFetching
   const hasError = isHistoryTab ? employeesIsError : isError
-  const queryError = error?.data?.message || error?.error || ''
-  const employeesQueryError = employeesError?.data?.message || employeesError?.error || ''
-  const rejectError = rejectState.error?.data?.message || rejectState.error?.error || ''
+  const queryError = error ? getApiErrorMessage(error, t('loadFailed')) : ''
+  const employeesQueryError = employeesError ? getApiErrorMessage(employeesError, t('loadFailed')) : ''
+  const rejectError = rejectState.error ? getApiErrorMessage(rejectState.error) : ''
 
   useEffect(() => {
     setPage(1)
@@ -256,12 +270,8 @@ export default function DeviceRequests() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-xl font-black sm:text-2xl">Device Management</h1>
-    <p className="text-sm text-app-muted">
-  {isHistoryTab
-    ? "View employee-wise registered devices, status, and login history in one place."
-    : "Review device change requests raised by employees and approve or reject them here."}
-</p>
+        <h1 className="text-xl font-black sm:text-2xl">{t('title')}</h1>
+        <p className="text-sm text-app-muted">{isHistoryTab ? t('subtitle.history') : t('subtitle.requests')}</p>
       </div>
 
       <Card>
@@ -270,17 +280,18 @@ export default function DeviceRequests() {
             {TABS.map((item) => (
               <button
                 key={item}
+                type="button"
                 onClick={() => setTab(item)}
                 className={`min-h-10 shrink-0 rounded-md px-4 text-sm font-bold transition ${
                   tab === item ? 'bg-primary text-white shadow-soft' : 'text-primary hover:bg-primary/10'
                 }`}
               >
-                {item}
+                {t(`tabs.${item.toLowerCase()}`)}
               </button>
             ))}
           </div>
           <p className="text-sm font-semibold text-app-muted">
-            {pagination.total} {isHistoryTab ? 'employee(s)' : 'request(s)'}
+            {isHistoryTab ? t('summary.employees', { count: pagination.total }) : t('summary.requests', { count: pagination.total })}
           </p>
         </div>
 
@@ -289,7 +300,7 @@ export default function DeviceRequests() {
             {isHistoryTab ? employeesQueryError : queryError}
           </p>
         )}
-        {fetching && !loading && <p className="mb-3 text-sm font-semibold text-app-muted">Refreshing...</p>}
+        {fetching && !loading && <p className="mb-3 text-sm font-semibold text-app-muted">{t('common:actions.refreshing')}</p>}
 
         <Table
           rows={rows}
@@ -298,7 +309,7 @@ export default function DeviceRequests() {
               ? [
                   {
                     key: 'employee',
-                    header: 'Employee',
+                    header: t('columns.employee'),
                     render: (row) => (
                       <div className="flex items-center gap-3">
                         <Avatar name={row.name} />
@@ -309,19 +320,19 @@ export default function DeviceRequests() {
                       </div>
                     )
                   },
-                  { key: 'code', header: 'Code' },
+                  { key: 'code', header: t('columns.code') },
                   {
                     key: 'devices',
-                    header: 'Device Summary',
+                    header: t('columns.deviceSummary'),
                     render: (row) => <DeviceHistorySummaryCell employeeId={row.id} />
                   },
-                  { key: 'status', header: 'Employee Status', render: (row) => <Badge status={row.status} /> },
+                  { key: 'status', header: t('columns.employeeStatus'), render: (row) => <Badge status={row.status} /> },
                   {
                     key: 'actions',
-                    header: 'Actions',
+                    header: t('columns.actions'),
                     render: (row) => (
                       <Button variant="outline" icon={FiEye} onClick={() => setHistoryEmployee(row)}>
-                        View History
+                        {t('viewHistory')}
                       </Button>
                     )
                   }
@@ -329,12 +340,12 @@ export default function DeviceRequests() {
               : [
                   {
                     key: 'employee',
-                    header: 'Employee',
+                    header: t('columns.employee'),
                     render: (row) => <EmployeeCell employeeId={row.employeeId} />
                   },
                   {
                     key: 'devices',
-                    header: 'Current vs Requested',
+                    header: t('columns.currentVsRequested'),
                     render: (row) => (
                       <DeviceCompareCell
                         employeeId={row.employeeId}
@@ -347,13 +358,13 @@ export default function DeviceRequests() {
                   },
                   {
                     key: 'requestedAt',
-                    header: 'Requested At',
+                    header: t('columns.requestedAt'),
                     render: (row) => formatDateTime(row.requestedAt)
                   },
-                  { key: 'status', header: 'Status', render: (row) => <Badge status={row.status} /> },
+                  { key: 'status', header: t('columns.status'), render: (row) => <Badge status={row.status} /> },
                   {
                     key: 'actions',
-                    header: 'Actions',
+                    header: t('columns.actions'),
                     render: (row) =>
                       row.status === 'Pending' ? (
                         <div className="flex flex-wrap gap-2">
@@ -363,10 +374,10 @@ export default function DeviceRequests() {
                             disabled={approveState.isLoading}
                             onClick={() => handleApprove(row.id)}
                           >
-                            Approve
+                            {t('common:actions.approve')}
                           </Button>
                           <Button variant="danger" icon={FiX} onClick={() => openRejectModal(row.id)}>
-                            Reject
+                            {t('common:actions.reject')}
                           </Button>
                         </div>
                       ) : (
@@ -381,31 +392,31 @@ export default function DeviceRequests() {
 
         <div className="mt-4 flex flex-col gap-3 text-sm text-app-muted sm:flex-row sm:items-center sm:justify-between">
           <span>
-            Page {pagination.page} of {pagination.total_pages} - Showing {rows.length} of {pagination.total}
+            {t('common:pagination.summary', { page: pagination.page, totalPages: pagination.total_pages, shown: rows.length, total: pagination.total })}
           </span>
           <div className="flex gap-2">
             <Button variant="ghost" disabled={page <= 1 || fetching} onClick={() => setPage((current) => Math.max(1, current - 1))}>
-              Previous
+              {t('common:actions.previous')}
             </Button>
             <Button
               variant="ghost"
               disabled={page >= pagination.total_pages || fetching}
               onClick={() => setPage((current) => current + 1)}
             >
-              Next
+              {t('common:actions.next')}
             </Button>
           </div>
         </div>
       </Card>
 
-      <Modal open={Boolean(rejectingId)} title="Reject Device Change Request" onClose={() => setRejectingId(null)}>
+      <Modal open={Boolean(rejectingId)} title={t('reject.title')} onClose={() => setRejectingId(null)}>
         <form className="space-y-4" onSubmit={handleRejectSubmit}>
           {rejectError && <p className="rounded-lg bg-danger/10 p-3 text-sm font-semibold text-danger">{rejectError}</p>}
           <label className="block text-sm font-semibold text-app-text">
-            <span className="mb-1.5 block">Rejection Reason</span>
+            <span className="mb-1.5 block">{t('reject.reasonLabel')}</span>
             <textarea
               className="min-h-24 w-full rounded-lg border border-primary/15 bg-app-bg px-3 py-2 text-app-text outline-none transition placeholder:text-app-muted focus:border-primary focus:ring-2 focus:ring-primary/20"
-              placeholder="Could not verify the employee identity"
+              placeholder={t('reject.reasonPlaceholder')}
               value={rejectReason}
               onChange={(event) => setRejectReason(event.target.value)}
               required
@@ -413,10 +424,10 @@ export default function DeviceRequests() {
           </label>
           <div className="flex justify-end gap-2">
             <Button type="button" variant="ghost" onClick={() => setRejectingId(null)}>
-              Cancel
+              {t('common:actions.cancel')}
             </Button>
             <Button type="submit" variant="danger" disabled={rejectState.isLoading}>
-              Reject Request
+              {t('reject.submit')}
             </Button>
           </div>
         </form>

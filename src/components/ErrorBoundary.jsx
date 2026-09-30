@@ -1,4 +1,5 @@
 import { Component } from 'react'
+import { withTranslation } from 'react-i18next'
 import Button from './ui/Button.jsx'
 
 class ErrorBoundary extends Component {
@@ -30,21 +31,22 @@ class ErrorBoundary extends Component {
   }
 
   render() {
+    const { t } = this.props
+
     if (this.state.hasError) {
       return (
         <div className="grid min-h-screen place-items-center bg-app-bg px-4">
           <div className="max-w-md text-center">
             <h1 className="mb-2 text-xl font-semibold text-app-text">
-              Something went wrong
+              {t('errors:boundaryTitle')}
             </h1>
 
             <p className="mb-6 text-sm text-app-text/70">
-              There was an error while loading this page. Please try going
-              back to the dashboard.
+              {t('errors:boundaryBody')}
             </p>
 
             <Button onClick={this.handleReset}>
-              Go to Dashboard
+              {t('errors:goToDashboard')}
             </Button>
           </div>
         </div>
@@ -55,4 +57,6 @@ class ErrorBoundary extends Component {
   }
 }
 
-export default ErrorBoundary
+// Class component me hook nahi chalta -> withTranslation HOC (language badalne par re-render hota hai)
+const TranslatedErrorBoundary = withTranslation()(ErrorBoundary)
+export default TranslatedErrorBoundary

@@ -1,0 +1,30 @@
+{
+  "groups": { "core": "मुख्य", "operations": "संचालन" },
+  "items": {
+    "dashboard": "डैशबोर्ड",
+    "employees": "कर्मचारी",
+    "wfh": "वर्क फ्रॉम होम",
+    "offices": "कार्यालय",
+    "devices": "डिवाइस",
+    "leave": "छुट्टी",
+    "holidays": "अवकाश",
+    "attendanceOverview": "उपस्थिति अवलोकन",
+    "attendanceReport": "उपस्थिति रिपोर्ट"
+  },
+  "breadcrumb": {
+    "dashboard": "डैशबोर्ड",
+    "employees": "कर्मचारी",
+    "new": "नया",
+    "wfh": "वर्क फ्रॉम होम",
+    "offices": "कार्यालय",
+    "devices": "डिवाइस",
+    "leave": "छुट्टी",
+    "requests": "अनुरोध",
+    "balances": "शेष",
+    "types": "प्रकार",
+    "holidays": "अवकाश",
+    "attendance": "उपस्थिति",
+    "correction": "सुधार",
+    "reports": "रिपोर्ट"
+  }
+}

@@ -1,5 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
-import { FiCalendar, FiClock, FiDownload, FiPieChart, FiPrinter, FiSearch, FiSun, FiUser, FiX } from 'react-icons/fi'
+import { useTranslation } from 'react-i18next'
+import { useSearchParams } from 'react-router-dom'
+import { FiArrowLeft, FiCalendar, FiClock, FiDownload, FiEye, FiPieChart, FiPrinter, FiSearch, FiSun, FiUser, FiX } from 'react-icons/fi'
 import Avatar from '../../components/ui/Avatar.jsx'
 import Badge from '../../components/ui/Badge.jsx'
 import Button from '../../components/ui/Button.jsx'
@@ -10,19 +12,15 @@ import Select from '../../components/ui/Select.jsx'
 import StatCard from '../../components/ui/StatCard.jsx'
 import Table from '../../components/ui/Table.jsx'
 import ReportPrintHeader from '../../components/reports/ReportPrintHeader.jsx'
-import { useGetEmployeesQuery } from '../../store/api/employeesApi.js'
+import { useGetEmployeeQuery, useGetEmployeesQuery } from '../../store/api/employeesApi.js'
 import { useGetDailyReportQuery, useGetLateReportQuery, useGetLeaveReportQuery, useGetMonthlyReportQuery } from '../../store/api/reportsApi.js'
 import { downloadCompanyExcelReport, downloadEmployeeExcelReport } from '../../services/reportExportService.js'
+import { getApiErrorMessage } from '../../lib/apiError.js'
+import { toLocalDateString } from '../../lib/date.js'
+import { useFormatters } from '../../lib/format.js'
 
 // Local (device ke timezone) ke hisaab se YYYY-MM-DD.
 // toISOString() UTC deta hai, isliye India mein subah 5:30 se pehle kal ki date aa jati thi.
-function toLocalDateString(d = new Date()) {
-  const year = d.getFullYear()
-  const month = String(d.getMonth() + 1).padStart(2, '0')
-  const day = String(d.getDate()).padStart(2, '0')
-  return `${year}-${month}-${day}`
-}
-
 const NOW = new Date()
 const CURRENT_YEAR = NOW.getFullYear()
 const YEAR_OPTIONS = [CURRENT_YEAR - 1, CURRENT_YEAR, CURRENT_YEAR + 1].map((year) => ({ value: String(year), label: String(year) }))
@@ -33,18 +31,10 @@ const MONTH_OPTIONS = Array.from({ length: 12 }, (_, index) => ({
 
 // Daily sabse pehle, Employee Report sabse aakhir mein
 const TABS = [
-  { key: 'daily', label: 'Daily', icon: FiCalendar },
-  { key: 'monthly', label: 'Monthly', icon: FiPieChart },
-  { key: 'late', label: 'Late', icon: FiClock },
-  { key: 'leave', label: 'Leave', icon: FiSun },
-  { key: 'employee', label: 'Employee Report', icon: FiUser }
+  { key: 'daily', icon: FiCalendar }, { key: 'monthly', icon: FiPieChart }, { key: 'late', icon: FiClock }, { key: 'leave', icon: FiSun }, { key: 'employee', icon: FiUser }
 ]
 
 const DEFAULT_TAB = 'daily'
-
-function getApiErrorMessage(error) {
-  return error?.data?.message || error?.data?.error?.message || error?.error || error?.message || 'Something went wrong.'
-}
 
 function monthLabel(month) {
   return MONTH_OPTIONS[Number(month) - 1]?.label || month
@@ -66,7 +56,10 @@ function statusLabel(raw) {
 }
 
 export default function Reports() {
-  const [activeTab, setActiveTab] = useState(DEFAULT_TAB)
+  const { t } = useTranslation('reports')
+  const fmt = useFormatters()
+  const [searchParams, setSearchParams] = useSearchParams()
+  const [activeTab, setActiveTab] = useState(() => searchParams.get('tab') || DEFAULT_TAB)
   const [year, setYear] = useState(String(CURRENT_YEAR))
   const [month, setMonth] = useState(String(NOW.getMonth() + 1))
   const [exporting, setExporting] = useState(false)
@@ -88,16 +81,16 @@ export default function Reports() {
     <div className="space-y-6">
       <div className="flex flex-col justify-between gap-3 print:hidden lg:flex-row lg:items-end">
         <div>
-          <h1 className="text-xl font-black sm:text-2xl">Reports</h1>
-          <p className="text-sm text-app-muted">Daily, monthly, late aur leave reports — print karo ya Excel me download.</p>
+          <h1 className="text-xl font-black sm:text-2xl">{t('title')}</h1>
+          <p className="text-sm text-app-muted">{t('subtitle')}</p>
         </div>
 
         {activeTab !== 'employee' && (
           <div className="flex flex-wrap items-end gap-2">
-            <Select label="Year" value={year} onChange={(event) => setYear(event.target.value)} options={YEAR_OPTIONS} className="w-24" />
-            <Select label="Month" value={month} onChange={(event) => setMonth(event.target.value)} options={MONTH_OPTIONS} className="w-36" />
+            <Select label={t('filters.year')} value={year} onChange={(event) => setYear(event.target.value)} options={YEAR_OPTIONS} className="w-24" />
+            <Select label={t('filters.month')} value={month} onChange={(event) => setMonth(event.target.value)} options={MONTH_OPTIONS.map((option, index) => ({ ...option, label: fmt.monthName(index) }))} className="w-36" />
             <Button icon={FiDownload} onClick={handleCompanyExport} disabled={exporting} className="whitespace-nowrap">
-              {exporting ? 'Exporting...' : 'Company Excel'}
+              {exporting ? t('actions.exporting') : t('actions.companyExcel')}
             </Button>
           </div>
         )}
@@ -113,7 +106,7 @@ export default function Reports() {
             <button
               key={tab.key}
               type="button"
-              onClick={() => setActiveTab(tab.key)}
+              onClick={() => { setActiveTab(tab.key); setSearchParams((current) => { const next = new window.URLSearchParams(current); next.set('tab', tab.key); return next }) }}
               className={`flex min-h-10 shrink-0 items-center gap-2 whitespace-nowrap rounded-xl px-4 text-sm font-bold transition-all duration-200 ease-out ${
                 isActive
                   ? 'bg-gradient-to-r from-primary to-secondary text-white shadow-[0_10px_22px_-8px_rgb(var(--color-primary)/0.6)]'
@@ -121,7 +114,7 @@ export default function Reports() {
               }`}
             >
               <Icon className={`h-4 w-4 shrink-0 ${isActive ? '' : 'opacity-70'}`} />
-              {tab.label}
+              {t(`tabs.${tab.key}`)}
             </button>
           )
         })}
@@ -139,6 +132,7 @@ export default function Reports() {
 /* ------------------------------ Daily tab ------------------------------ */
 
 function DailyReportTab() {
+  const { t } = useTranslation('reports')
   const [date, setDate] = useState(() => toLocalDateString())
   const [page, setPage] = useState(1)
   const limit = 20
@@ -152,16 +146,16 @@ function DailyReportTab() {
 
   return (
     <Card className="space-y-4">
-      <ReportPrintHeader title="Daily Attendance Report" subtitle={date} />
+      <ReportPrintHeader title={t('daily.title')} subtitle={date} />
       <div className="flex flex-col gap-3 print:hidden sm:flex-row sm:items-end sm:justify-between">
-        <Input label="Date" type="date" value={date} onChange={(event) => setDate(event.target.value)} className="w-full sm:w-56" />
-        <Button variant="ghost" icon={FiPrinter} onClick={() => window.print()}>
-          Print
+        <Input label={t('filters.date')} type="date" value={date} onChange={(event) => setDate(event.target.value)} className="w-full sm:w-56" />
+        <Button variant="outline" icon={FiPrinter} onClick={() => window.print()}>
+          {t('actions.print')}
         </Button>
       </div>
 
       {isError && <p className="rounded-lg bg-danger/10 p-3 text-sm font-semibold text-danger">{getApiErrorMessage(error)}</p>}
-      {isFetching && !isLoading && <p className="text-sm font-semibold text-app-muted print:hidden">Refreshing...</p>}
+      {isFetching && !isLoading && <p className="text-sm font-semibold text-app-muted print:hidden">{t('actions.refreshing')}</p>}
 
       {isLoading ? (
         <Loader />
@@ -171,7 +165,7 @@ function DailyReportTab() {
           columns={[
             {
               key: 'employee',
-              header: 'Employee',
+              header: t('daily.columns.employee'),
               render: (row) => (
                 <div>
                   <p className="font-bold">{row.employeeName}</p>
@@ -179,26 +173,26 @@ function DailyReportTab() {
                 </div>
               )
             },
-            { key: 'status', header: 'Status', render: (row) => <Badge status={statusLabel(row.status)} /> },
-            { key: 'checkIn', header: 'Check In', render: (row) => formatTime(row.checkIn) },
-            { key: 'checkOut', header: 'Check Out', render: (row) => formatTime(row.checkOut) },
-            { key: 'late', header: 'Late (min)', render: (row) => row.lateMinutes || 0 },
-            { key: 'early', header: 'Early (min)', render: (row) => row.earlyMinutes || 0 },
-            { key: 'worked', header: 'Worked (min)', render: (row) => row.workedMinutes || 0 }
+            { key: 'status', header: t('daily.columns.status'), render: (row) => <Badge status={statusLabel(row.status)} /> },
+            { key: 'checkIn', header: t('daily.columns.checkIn'), render: (row) => formatTime(row.checkIn) },
+            { key: 'checkOut', header: t('daily.columns.checkOut'), render: (row) => formatTime(row.checkOut) },
+            { key: 'late', header: t('daily.columns.late'), render: (row) => row.lateMinutes || 0 },
+            { key: 'early', header: t('daily.columns.early'), render: (row) => row.earlyMinutes || 0 },
+            { key: 'worked', header: t('daily.columns.worked'), render: (row) => row.workedMinutes || 0 }
           ]}
         />
       )}
 
       <div className="flex flex-col gap-3 text-sm text-app-muted print:hidden sm:flex-row sm:items-center sm:justify-between">
         <span>
-          Page {pagination.page} of {pagination.total_pages || 1} - {pagination.total ?? rows.length} records
+          {t('common:pagination.summary', { page: pagination.page, totalPages: pagination.total_pages || 1, shown: rows.length, total: pagination.total ?? rows.length })}
         </span>
         <div className="flex gap-2">
-          <Button variant="ghost" disabled={page <= 1 || isFetching} onClick={() => setPage((current) => Math.max(1, current - 1))}>
-            Previous
+          <Button variant="outline" disabled={page <= 1 || isFetching} onClick={() => setPage((current) => Math.max(1, current - 1))}>
+            {t('common:actions.previous')}
           </Button>
-          <Button variant="ghost" disabled={page >= (pagination.total_pages || 1) || isFetching} onClick={() => setPage((current) => current + 1)}>
-            Next
+          <Button variant="outline" disabled={page >= (pagination.total_pages || 1) || isFetching} onClick={() => setPage((current) => current + 1)}>
+            {t('common:actions.next')}
           </Button>
         </div>
       </div>
@@ -220,7 +214,7 @@ function MonthlyReportTab({ year, month }) {
           Weekend days: <strong className="text-app-text">{data?.weekendDays ?? '-'}</strong> · Holiday days:{' '}
           <strong className="text-app-text">{data?.holidayDays ?? '-'}</strong>
         </p>
-        <Button variant="ghost" icon={FiPrinter} onClick={() => window.print()}>
+        <Button variant="outline" icon={FiPrinter} onClick={() => window.print()}>
           Print
         </Button>
       </div>
@@ -273,7 +267,7 @@ function LateReportTab({ year, month }) {
     <Card className="space-y-4">
       <ReportPrintHeader title="Late Arrivals Report" subtitle={`${monthLabel(month)} ${year}`} />
       <div className="flex justify-end print:hidden">
-        <Button variant="ghost" icon={FiPrinter} onClick={() => window.print()}>
+        <Button variant="outline" icon={FiPrinter} onClick={() => window.print()}>
           Print
         </Button>
       </div>
@@ -309,10 +303,10 @@ function LateReportTab({ year, month }) {
           Page {pagination.page} of {pagination.total_pages || 1} - {pagination.total ?? rows.length} records
         </span>
         <div className="flex gap-2">
-          <Button variant="ghost" disabled={page <= 1 || isFetching} onClick={() => setPage((current) => Math.max(1, current - 1))}>
+          <Button variant="outline" disabled={page <= 1 || isFetching} onClick={() => setPage((current) => Math.max(1, current - 1))}>
             Previous
           </Button>
-          <Button variant="ghost" disabled={page >= (pagination.total_pages || 1) || isFetching} onClick={() => setPage((current) => current + 1)}>
+          <Button variant="outline" disabled={page >= (pagination.total_pages || 1) || isFetching} onClick={() => setPage((current) => current + 1)}>
             Next
           </Button>
         </div>
@@ -338,7 +332,7 @@ function LeaveReportTab({ year, month }) {
     <Card className="space-y-4">
       <ReportPrintHeader title="Leave Report" subtitle={`${monthLabel(month)} ${year}`} />
       <div className="flex justify-end print:hidden">
-        <Button variant="ghost" icon={FiPrinter} onClick={() => window.print()}>
+        <Button variant="outline" icon={FiPrinter} onClick={() => window.print()}>
           Print
         </Button>
       </div>
@@ -375,10 +369,10 @@ function LeaveReportTab({ year, month }) {
           Page {pagination.page} of {pagination.total_pages || 1} - {pagination.total ?? rows.length} records
         </span>
         <div className="flex gap-2">
-          <Button variant="ghost" disabled={page <= 1 || isFetching} onClick={() => setPage((current) => Math.max(1, current - 1))}>
+          <Button variant="outline" disabled={page <= 1 || isFetching} onClick={() => setPage((current) => Math.max(1, current - 1))}>
             Previous
           </Button>
-          <Button variant="ghost" disabled={page >= (pagination.total_pages || 1) || isFetching} onClick={() => setPage((current) => current + 1)}>
+          <Button variant="outline" disabled={page >= (pagination.total_pages || 1) || isFetching} onClick={() => setPage((current) => current + 1)}>
             Next
           </Button>
         </div>
@@ -393,6 +387,10 @@ function LeaveReportTab({ year, month }) {
 // print bhi ho sake aur Excel me bhi download ho.
 
 function EmployeeReportTab({ year, month }) {
+  const { t } = useTranslation('reports')
+  const formatters = useFormatters()
+  const [params, setParams] = useSearchParams()
+  const employeeId = params.get('employee')
   const [search, setSearch] = useState('')
   const [debouncedSearch, setDebouncedSearch] = useState('')
   const [dropdownOpen, setDropdownOpen] = useState(false)
@@ -400,16 +398,25 @@ function EmployeeReportTab({ year, month }) {
   const [date, setDate] = useState('')
   const [excelExporting, setExcelExporting] = useState(false)
   const [excelError, setExcelError] = useState('')
+  const [employeePage, setEmployeePage] = useState(1)
 
   useEffect(() => {
     const timer = setTimeout(() => setDebouncedSearch(search.trim()), 300)
     return () => clearTimeout(timer)
   }, [search])
 
+  useEffect(() => {
+    setEmployeePage(1)
+  }, [debouncedSearch])
+
   const { data: employeeResults, isFetching: employeesFetching } = useGetEmployeesQuery(
-    { search: debouncedSearch, limit: 8 },
-    { skip: !debouncedSearch }
+    { page: employeePage, search: debouncedSearch, limit: 20 }
   )
+  const { data: linkedEmployee } = useGetEmployeeQuery(employeeId, { skip: !employeeId })
+
+  useEffect(() => {
+    if (employeeId && linkedEmployee) setSelectedEmployee(linkedEmployee)
+  }, [employeeId, linkedEmployee])
 
   const { data: monthlyData, isLoading: monthlyLoading } = useGetMonthlyReportQuery({ year, month }, { skip: !selectedEmployee })
   // Late/Leave APIs abhi employee-wise filter support nahi karte (sirf year/month/page/limit),
@@ -446,6 +453,24 @@ function EmployeeReportTab({ year, month }) {
   function clearEmployee() {
     setSelectedEmployee(null)
     setSearch('')
+    setParams((current) => { const next = new window.URLSearchParams(current); next.delete('employee'); return next })
+  }
+
+  function backToList() {
+    setSelectedEmployee(null)
+    setDate('')
+    setSearch('')
+    setDebouncedSearch('')
+    setDropdownOpen(false)
+    setEmployeePage(1)
+    setParams((current) => { const next = new window.URLSearchParams(current); next.delete('employee'); return next })
+  }
+
+  function selectEmployee(employee) {
+    setSelectedEmployee(employee)
+    setParams((current) => { const next = new window.URLSearchParams(current); next.set('employee', employee.id); return next })
+    setSearch(`${employee.name} (${employee.code})`)
+    setDropdownOpen(false)
   }
 
   async function handleEmployeeExcel() {
@@ -460,7 +485,9 @@ function EmployeeReportTab({ year, month }) {
         summary,
         lateRows,
         leaveRows,
-        dailyRows: dailyRow ? [dailyRow] : []
+        dailyRows: dailyRow ? [dailyRow] : [],
+        t,
+        formatters
       })
     } catch (err) {
       setExcelError(err.message || 'Excel export failed.')
@@ -484,6 +511,7 @@ function EmployeeReportTab({ year, month }) {
                 onChange={(event) => {
                   setSearch(event.target.value)
                   setSelectedEmployee(null)
+                  setParams((current) => { const next = new window.URLSearchParams(current); next.delete('employee'); return next })
                   setDropdownOpen(true)
                 }}
                 onFocus={() => setDropdownOpen(true)}
@@ -507,9 +535,7 @@ function EmployeeReportTab({ year, month }) {
                     className="flex w-full items-center justify-between px-3 py-2 text-left text-sm hover:bg-primary/10"
                     onMouseDown={(event) => event.preventDefault()}
                     onClick={() => {
-                      setSelectedEmployee(employee)
-                      setSearch(`${employee.name} (${employee.code})`)
-                      setDropdownOpen(false)
+                      selectEmployee(employee)
                     }}
                   >
                     <span className="font-semibold text-app-text">{employee.name}</span>
@@ -525,10 +551,17 @@ function EmployeeReportTab({ year, month }) {
       </Card>
 
       {!selectedEmployee && (
-        <Card>
-          <p className="text-center text-sm text-app-muted">
-            Search for an employee above (by name or employee ID) to view their complete {monthLabel(month)} {year} report.
-          </p>
+        <Card className="space-y-4">
+          <p className="text-sm text-app-muted">{t('employee.searchHint', { month: monthLabel(month), year })}</p>
+          {employeesFetching ? <Loader /> : <Table rows={employeeResults?.items || []} columns={[
+            { key: 'employee', header: t('employee.list.employee'), render: (employee) => <button type="button" className="flex items-center gap-3 text-left" onClick={() => selectEmployee(employee)}><Avatar name={employee.name} /><span className="font-bold text-app-text">{employee.name}</span></button> },
+            { key: 'code', header: t('employee.list.code'), render: (employee) => employee.code || '-' },
+            { key: 'email', header: t('employee.list.email'), render: (employee) => employee.email || '-' },
+            { key: 'phone', header: t('employee.list.phone'), render: (employee) => employee.phone || '-' },
+            { key: 'status', header: t('employee.list.status'), render: (employee) => <Badge status={employee.status} /> },
+            { key: 'actions', header: t('employee.list.actions'), headerClassName: 'text-left', cellClassName: 'text-left', render: (employee) => <Button variant="outline" icon={FiEye} aria-label={t('actions.view')} onClick={() => selectEmployee(employee)} /> }
+          ]} />}
+          {(employeeResults?.pagination?.total_pages || 1) > 1 && <div className="flex items-center justify-between border-t border-primary/10 pt-4 text-sm text-app-muted"><span>{t('common:pagination.summary', { page: employeeResults.pagination.page, totalPages: employeeResults.pagination.total_pages, shown: employeeResults.items.length, total: employeeResults.pagination.total })}</span><div className="flex gap-2"><Button variant="outline" disabled={employeePage <= 1 || employeesFetching} onClick={() => setEmployeePage((page) => page - 1)}>{t('common:actions.previous')}</Button><Button variant="outline" disabled={employeePage >= employeeResults.pagination.total_pages || employeesFetching} onClick={() => setEmployeePage((page) => page + 1)}>{t('common:actions.next')}</Button></div></div>}
         </Card>
       )}
 
@@ -541,6 +574,7 @@ function EmployeeReportTab({ year, month }) {
 
           <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
             <div className="flex items-center gap-3">
+              <Button variant="outline" icon={FiArrowLeft} className="print:hidden" onClick={backToList}>{t('actions.back')}</Button>
               <Avatar name={selectedEmployee.name} />
               <div>
                 <p className="text-lg font-black text-app-text">{selectedEmployee.name}</p>
@@ -550,7 +584,7 @@ function EmployeeReportTab({ year, month }) {
               </div>
             </div>
             <div className="flex flex-wrap gap-2 print:hidden">
-              <Button variant="ghost" icon={FiPrinter} onClick={() => window.print()}>
+              <Button variant="outline" icon={FiPrinter} onClick={() => window.print()}>
                 Print / Save PDF
               </Button>
               <Button icon={FiDownload} onClick={handleEmployeeExcel} disabled={excelExporting}>
