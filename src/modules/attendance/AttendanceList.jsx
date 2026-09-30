@@ -352,7 +352,5 @@ function OverviewTab() {
 }
 
 export default function AttendanceList() {
-  const { t } = useTranslation('attendance')
-  const [tab, setTab] = useState('overview')
-  return <div className="space-y-6"><div><h1 className="text-xl font-black sm:text-2xl">{t('overview.title')}</h1><p className="text-sm text-app-muted">{t('overview.subtitle')}</p></div><div className="hide-scrollbar flex max-w-full gap-1.5 overflow-x-auto rounded-2xl border border-primary/10 bg-app-surface/70 p-1.5 shadow-soft ring-1 ring-white/40 backdrop-blur dark:ring-white/5"><button type="button" onClick={() => setTab('overview')} className={`flex min-h-10 shrink-0 items-center rounded-xl px-4 text-sm font-bold ${tab === 'overview' ? 'bg-gradient-to-r from-primary to-secondary text-white shadow-[0_10px_22px_-8px_rgb(var(--color-primary)/0.6)]' : 'text-app-muted hover:bg-primary/10 hover:text-app-text'}`}>{t('overview.tab')}</button><button type="button" onClick={() => setTab('overrides')} className={`flex min-h-10 shrink-0 items-center rounded-xl px-4 text-sm font-bold ${tab === 'overrides' ? 'bg-gradient-to-r from-primary to-secondary text-white shadow-[0_10px_22px_-8px_rgb(var(--color-primary)/0.6)]' : 'text-app-muted hover:bg-primary/10 hover:text-app-text'}`}>{t('overview.overridesTab')}</button></div>{tab === 'overview' ? <OverviewTab /> : <OverridesTab />}</div>
+  return <OverridesTab />
 }
