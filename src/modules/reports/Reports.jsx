@@ -8,7 +8,6 @@ import Button from '../../components/ui/Button.jsx'
 import Card from '../../components/ui/Card.jsx'
 import Input from '../../components/ui/Input.jsx'
 import Loader from '../../components/ui/Loader.jsx'
-import Select from '../../components/ui/Select.jsx'
 import StatCard from '../../components/ui/StatCard.jsx'
 import Table from '../../components/ui/Table.jsx'
 import ReportPrintHeader from '../../components/reports/ReportPrintHeader.jsx'
@@ -22,12 +21,9 @@ import { useFormatters } from '../../lib/format.js'
 // Local (device ke timezone) ke hisaab se YYYY-MM-DD.
 // toISOString() UTC deta hai, isliye India mein subah 5:30 se pehle kal ki date aa jati thi.
 const NOW = new Date()
-const CURRENT_YEAR = NOW.getFullYear()
-const YEAR_OPTIONS = [CURRENT_YEAR - 1, CURRENT_YEAR, CURRENT_YEAR + 1].map((year) => ({ value: String(year), label: String(year) }))
-const MONTH_OPTIONS = Array.from({ length: 12 }, (_, index) => ({
-  value: String(index + 1),
-  label: new Date(2000, index, 1).toLocaleString('en-US', { month: 'long' })
-}))
+// Default range: current month ki 1 tareekh se aaj tak
+const DEFAULT_FROM_DATE = toLocalDateString(new Date(NOW.getFullYear(), NOW.getMonth(), 1))
+const DEFAULT_TO_DATE = toLocalDateString(NOW)
 
 // Daily sabse pehle, Employee Report sabse aakhir mein
 const TABS = [
@@ -36,8 +32,13 @@ const TABS = [
 
 const DEFAULT_TAB = 'daily'
 
-function monthLabel(month) {
-  return MONTH_OPTIONS[Number(month) - 1]?.label || month
+// From <= To hona chahiye (YYYY-MM-DD string compare sahi chalta hai)
+function isValidRange(fromDate, toDate) {
+  return Boolean(fromDate && toDate && fromDate <= toDate)
+}
+
+function rangeLabel(fromDate, toDate) {
+  return `${fromDate} to ${toDate}`
 }
 
 function formatTime(value) {
@@ -57,19 +58,20 @@ function statusLabel(raw) {
 
 export default function Reports() {
   const { t } = useTranslation('reports')
-  const fmt = useFormatters()
   const [searchParams, setSearchParams] = useSearchParams()
   const [activeTab, setActiveTab] = useState(() => searchParams.get('tab') || DEFAULT_TAB)
-  const [year, setYear] = useState(String(CURRENT_YEAR))
-  const [month, setMonth] = useState(String(NOW.getMonth() + 1))
+  const [fromDate, setFromDate] = useState(DEFAULT_FROM_DATE)
+  const [toDate, setToDate] = useState(DEFAULT_TO_DATE)
   const [exporting, setExporting] = useState(false)
   const [exportError, setExportError] = useState('')
+  const rangeValid = isValidRange(fromDate, toDate)
 
   async function handleCompanyExport() {
+    if (!rangeValid) return
     setExporting(true)
     setExportError('')
     try {
-      await downloadCompanyExcelReport({ year, month })
+      await downloadCompanyExcelReport({ fromDate, toDate })
     } catch (err) {
       setExportError(err.message)
     } finally {
@@ -85,16 +87,18 @@ export default function Reports() {
           <p className="text-sm text-app-muted">{t('subtitle')}</p>
         </div>
 
-        {activeTab !== 'employee' && (
-          <div className="flex flex-wrap items-end gap-2">
-            <Select label={t('filters.year')} value={year} onChange={(event) => setYear(event.target.value)} options={YEAR_OPTIONS} className="w-24" />
-            <Select label={t('filters.month')} value={month} onChange={(event) => setMonth(event.target.value)} options={MONTH_OPTIONS.map((option, index) => ({ ...option, label: fmt.monthName(index) }))} className="w-36" />
-            <Button icon={FiDownload} onClick={handleCompanyExport} disabled={exporting} className="whitespace-nowrap">
+        <div className="flex flex-wrap items-end gap-2">
+          <Input label={t('filters.fromDate')} type="date" value={fromDate} max={toDate || undefined} onChange={(event) => setFromDate(event.target.value)} className="w-40" />
+          <Input label={t('filters.toDate')} type="date" value={toDate} min={fromDate || undefined} onChange={(event) => setToDate(event.target.value)} className="w-40" />
+          {activeTab !== 'employee' && (
+            <Button icon={FiDownload} onClick={handleCompanyExport} disabled={exporting || !rangeValid} className="whitespace-nowrap">
               {exporting ? t('actions.exporting') : t('actions.companyExcel')}
             </Button>
-          </div>
-        )}
+          )}
+        </div>
       </div>
+
+      {!rangeValid && <p className="rounded-lg bg-danger/10 p-3 text-sm font-semibold text-danger print:hidden">{t('errors.invalidRange')}</p>}
 
       {exportError && <p className="rounded-lg bg-danger/10 p-3 text-sm font-semibold text-danger print:hidden">{exportError}</p>}
 
@@ -121,10 +125,10 @@ export default function Reports() {
       </div>
 
       {activeTab === 'daily' && <DailyReportTab />}
-      {activeTab === 'monthly' && <MonthlyReportTab year={year} month={month} />}
-      {activeTab === 'late' && <LateReportTab year={year} month={month} />}
-      {activeTab === 'leave' && <LeaveReportTab year={year} month={month} />}
-      {activeTab === 'employee' && <EmployeeReportTab year={year} month={month} />}
+      {activeTab === 'monthly' && <MonthlyReportTab fromDate={fromDate} toDate={toDate} />}
+      {activeTab === 'late' && <LateReportTab fromDate={fromDate} toDate={toDate} />}
+      {activeTab === 'leave' && <LeaveReportTab fromDate={fromDate} toDate={toDate} />}
+      {activeTab === 'employee' && <EmployeeReportTab fromDate={fromDate} toDate={toDate} />}
     </div>
   )
 }
@@ -202,13 +206,13 @@ function DailyReportTab() {
 
 /* ----------------------------- Monthly tab ------------------------------ */
 
-function MonthlyReportTab({ year, month }) {
-  const { data, isLoading, isError, error } = useGetMonthlyReportQuery({ year, month })
+function MonthlyReportTab({ fromDate, toDate }) {
+  const { data, isLoading, isError, error } = useGetMonthlyReportQuery({ fromDate, toDate }, { skip: !isValidRange(fromDate, toDate) })
   const rows = data?.items || []
 
   return (
     <Card className="space-y-4">
-      <ReportPrintHeader title="Monthly Attendance Summary" subtitle={`${monthLabel(month)} ${year}`} />
+      <ReportPrintHeader title="Monthly Attendance Summary" subtitle={rangeLabel(fromDate, toDate)} />
       <div className="flex flex-col gap-2 print:hidden sm:flex-row sm:items-center sm:justify-between">
         <p className="text-sm text-app-muted">
           Weekend days: <strong className="text-app-text">{data?.weekendDays ?? '-'}</strong> · Holiday days:{' '}
@@ -252,20 +256,20 @@ function MonthlyReportTab({ year, month }) {
 
 /* ------------------------------- Late tab -------------------------------- */
 
-function LateReportTab({ year, month }) {
+function LateReportTab({ fromDate, toDate }) {
   const [page, setPage] = useState(1)
   const limit = 20
-  const { data, isLoading, isFetching, isError, error } = useGetLateReportQuery({ year, month, page, limit })
+  const { data, isLoading, isFetching, isError, error } = useGetLateReportQuery({ fromDate, toDate, page, limit }, { skip: !isValidRange(fromDate, toDate) })
   const rows = data?.items || []
   const pagination = data?.pagination || { page: 1, total_pages: 1, total: rows.length }
 
   useEffect(() => {
     setPage(1)
-  }, [year, month])
+  }, [fromDate, toDate])
 
   return (
     <Card className="space-y-4">
-      <ReportPrintHeader title="Late Arrivals Report" subtitle={`${monthLabel(month)} ${year}`} />
+      <ReportPrintHeader title="Late Arrivals Report" subtitle={rangeLabel(fromDate, toDate)} />
       <div className="flex justify-end print:hidden">
         <Button variant="outline" icon={FiPrinter} onClick={() => window.print()}>
           Print
@@ -317,20 +321,20 @@ function LateReportTab({ year, month }) {
 
 /* ------------------------------- Leave tab -------------------------------- */
 
-function LeaveReportTab({ year, month }) {
+function LeaveReportTab({ fromDate, toDate }) {
   const [page, setPage] = useState(1)
   const limit = 20
-  const { data, isLoading, isFetching, isError, error } = useGetLeaveReportQuery({ year, month, page, limit })
+  const { data, isLoading, isFetching, isError, error } = useGetLeaveReportQuery({ fromDate, toDate, page, limit }, { skip: !isValidRange(fromDate, toDate) })
   const rows = data?.items || []
   const pagination = data?.pagination || { page: 1, total_pages: 1, total: rows.length }
 
   useEffect(() => {
     setPage(1)
-  }, [year, month])
+  }, [fromDate, toDate])
 
   return (
     <Card className="space-y-4">
-      <ReportPrintHeader title="Leave Report" subtitle={`${monthLabel(month)} ${year}`} />
+      <ReportPrintHeader title="Leave Report" subtitle={rangeLabel(fromDate, toDate)} />
       <div className="flex justify-end print:hidden">
         <Button variant="outline" icon={FiPrinter} onClick={() => window.print()}>
           Print
@@ -386,7 +390,7 @@ function LeaveReportTab({ year, month }) {
 // (summary + late + leave + kisi ek din ka detail) ek jagah dikhe,
 // print bhi ho sake aur Excel me bhi download ho.
 
-function EmployeeReportTab({ year, month }) {
+function EmployeeReportTab({ fromDate, toDate }) {
   const { t } = useTranslation('reports')
   const formatters = useFormatters()
   const [params, setParams] = useSearchParams()
@@ -418,11 +422,12 @@ function EmployeeReportTab({ year, month }) {
     if (employeeId && linkedEmployee) setSelectedEmployee(linkedEmployee)
   }, [employeeId, linkedEmployee])
 
-  const { data: monthlyData, isLoading: monthlyLoading } = useGetMonthlyReportQuery({ year, month }, { skip: !selectedEmployee })
+  const rangeValid = isValidRange(fromDate, toDate)
+  const { data: monthlyData, isLoading: monthlyLoading } = useGetMonthlyReportQuery({ fromDate, toDate }, { skip: !selectedEmployee || !rangeValid })
   // Late/Leave APIs abhi employee-wise filter support nahi karte (sirf year/month/page/limit),
   // isliye ek bada page fetch karke client-side is employee ke rows filter kiye ja rahe hain.
-  const { data: lateData, isLoading: lateLoading } = useGetLateReportQuery({ year, month, page: 1, limit: 200 }, { skip: !selectedEmployee })
-  const { data: leaveData, isLoading: leaveLoading } = useGetLeaveReportQuery({ year, month, page: 1, limit: 200 }, { skip: !selectedEmployee })
+  const { data: lateData, isLoading: lateLoading } = useGetLateReportQuery({ fromDate, toDate, page: 1, limit: 200 }, { skip: !selectedEmployee || !rangeValid })
+  const { data: leaveData, isLoading: leaveLoading } = useGetLeaveReportQuery({ fromDate, toDate, page: 1, limit: 200 }, { skip: !selectedEmployee || !rangeValid })
   const { data: dailyData, isFetching: dailyFetching } = useGetDailyReportQuery(
     { date, page: 1, limit: 200 },
     { skip: !selectedEmployee || !date }
@@ -480,8 +485,8 @@ function EmployeeReportTab({ year, month }) {
     try {
       await downloadEmployeeExcelReport({
         employee: selectedEmployee,
-        year,
-        month,
+        fromDate,
+        toDate,
         summary,
         lateRows,
         leaveRows,
@@ -552,7 +557,7 @@ function EmployeeReportTab({ year, month }) {
 
       {!selectedEmployee && (
         <Card className="space-y-4">
-          <p className="text-sm text-app-muted">{t('employee.searchHint', { month: monthLabel(month), year })}</p>
+          <p className="text-sm text-app-muted">{t('employee.searchHint', { from: fromDate, to: toDate })}</p>
           {employeesFetching ? <Loader /> : <Table rows={employeeResults?.items || []} columns={[
             { key: 'employee', header: t('employee.list.employee'), render: (employee) => <button type="button" className="flex items-center gap-3 text-left" onClick={() => selectEmployee(employee)}><Avatar name={employee.name} /><span className="font-bold text-app-text">{employee.name}</span></button> },
             { key: 'code', header: t('employee.list.code'), render: (employee) => employee.code || '-' },
@@ -569,7 +574,7 @@ function EmployeeReportTab({ year, month }) {
         <Card className="space-y-6">
           <ReportPrintHeader
             title="Employee Attendance Report"
-            subtitle={`${selectedEmployee.name} (${selectedEmployee.code}) · ${monthLabel(month)} ${year}`}
+            subtitle={`${selectedEmployee.name} (${selectedEmployee.code}) · ${rangeLabel(fromDate, toDate)}`}
           />
 
           <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
@@ -613,7 +618,7 @@ function EmployeeReportTab({ year, month }) {
               </div>
 
               {!summary && (
-                <p className="text-sm text-app-muted">Is mahine ke monthly summary me is employee ka data nahi mila.</p>
+                <p className="text-sm text-app-muted">Is date range ke summary me is employee ka data nahi mila.</p>
               )}
 
               {date && (

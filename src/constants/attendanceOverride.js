@@ -1,6 +1,6 @@
 // Backend `status` values (POST /admin/attendance/overrides) -> English label.
-// Ye labels statusConfig.js (Badge) ke keys se match hote hain aur attendanceOverridesApi.js
-// inhe use karta hai, isliye inhe mat badlo. Screen par Hindi/English text labelKey se aata hai.
+// Ye labels statusConfig.js (Badge) ke keys se match hote hain, isliye inhe mat badlo.
+// Screen par Hindi/English text labelKey se aata hai.
 export const OVERRIDE_STATUS_LABELS = {
   PRESENT: 'Present',
   ABSENT: 'Absent',
@@ -8,8 +8,6 @@ export const OVERRIDE_STATUS_LABELS = {
   ON_LEAVE: 'On Leave'
 }
 
-// Dropdown options. Object KEY = backend value, `labelKey` = locales/*/status.json ki key.
-// `label` sirf fallback hai. Component me t(labelKey) se text banta hai, taaki language badalne par update ho.
 const OVERRIDE_STATUS_LABEL_KEYS = {
   PRESENT: 'status:present',
   ABSENT: 'status:absent',
@@ -22,3 +20,14 @@ export const OVERRIDE_STATUS_OPTIONS = Object.entries(OVERRIDE_STATUS_LABELS).ma
   label,
   labelKey: OVERRIDE_STATUS_LABEL_KEYS[value]
 }))
+
+// Raw backend status ("ON_LEAVE", "CHECKED_OUT") -> Badge label ("On Leave", "Checked Out").
+export function toBadgeLabel(raw) {
+  const key = String(raw || '').trim().toUpperCase()
+  if (!key) return ''
+  if (OVERRIDE_STATUS_LABELS[key]) return OVERRIDE_STATUS_LABELS[key]
+  return key
+    .replace(/_/g, ' ')
+    .toLowerCase()
+    .replace(/\b\w/g, (char) => char.toUpperCase())
+}

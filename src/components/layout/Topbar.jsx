@@ -2,7 +2,7 @@ import { useContext, useEffect, useRef, useState } from 'react'
 import { useDispatch } from 'react-redux'
 import { useTranslation } from 'react-i18next'
 import { useLocation, useNavigate } from 'react-router-dom'
-import { FiBell, FiChevronDown, FiLogOut, FiMenu } from 'react-icons/fi'
+import { FiBell, FiChevronDown , FiLogOut, FiMenu } from 'react-icons/fi'
 import { SidebarContext } from '../../context/SidebarContext.jsx'
 import { apiSlice, clearAuthSession, getAuthUser, getRefreshToken } from '../../store/apiSlice.js'
 import { useLogoutAdminMutation } from '../../store/api/authApi.js'
@@ -84,7 +84,7 @@ export default function Topbar() {
           >
             <Avatar name={displayName} size="sm" />
             <span className="hidden max-w-24 truncate text-sm font-bold text-app-text sm:block">{displayName}</span>
-            <FiChevronDown className={`h-4 w-4 text-app-muted transition ${profileOpen ? 'rotate-180' : ''}`} />
+            <FiChevronDown  className={`h-4 w-4 text-app-muted transition ${profileOpen ? 'rotate-180' : ''}`} />
           </button>
           {profileOpen && (
             <div className="absolute right-0 mt-2 w-64 rounded-lg border border-primary/10 bg-app-surface p-2 shadow-soft ring-1 ring-white/40 dark:ring-white/5">

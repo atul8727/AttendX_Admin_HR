@@ -21,6 +21,23 @@ function toDateOnly(value) {
   return `${date.getFullYear()}-${month}-${day}`
 }
 
+// Date-range filter (from_date / to_date, dono YYYY-MM-DD) ko query params me badalta hai.
+// NOTE: Monthly / Late / Leave endpoints purane backend me sirf year+month lete the.
+// Jab tak backend in teeno endpoints par from_date/to_date support na kare, hum from_date
+// se nikaale hue year+month bhi saath bhej dete hain (fallback). Backend ready hone par
+// SEND_LEGACY_MONTH_PARAMS ko false kar dena.
+const SEND_LEGACY_MONTH_PARAMS = true
+
+function rangeParams({ fromDate, toDate } = {}) {
+  const params = { from_date: fromDate, to_date: toDate }
+  if (SEND_LEGACY_MONTH_PARAMS && fromDate) {
+    const [year, month] = fromDate.split('-')
+    params.year = Number(year)
+    params.month = Number(month)
+  }
+  return params
+}
+
 /* ------------------------------ Daily ------------------------------ */
 
 function normalizeDailyRow(row = {}) {
@@ -100,10 +117,12 @@ function normalizeLeaveRow(row = {}, index = 0) {
 export const reportsApi = apiSlice.injectEndpoints({
   endpoints: (builder) => ({
     // GET {{base_url}}/admin/reports/daily?date=&page=&limit=
-    getDailyReport: builder.query({
-      query: ({ date, page = 1, limit = 20 } = {}) => ({
+   getDailyReport: builder.query({
+      query: ({ date, fromDate, toDate, page = 1, limit = 20 } = {}) => ({
         url: '/admin/reports/daily',
-        params: { date, page, limit }
+        params: fromDate && toDate
+          ? { date: fromDate, from_date: fromDate, to_date: toDate, page, limit }
+          : { date, page, limit }
       }),
       transformResponse: (response) => {
         const data = unwrapData(response)
@@ -116,11 +135,11 @@ export const reportsApi = apiSlice.injectEndpoints({
       providesTags: [{ type: 'Report', id: 'DAILY' }]
     }),
 
-    // GET {{base_url}}/admin/reports/monthly?year=&month=
+    // GET {{server_url}}/admin/reports/monthly?from_date=&to_date=
     getMonthlyReport: builder.query({
-      query: ({ year, month } = {}) => ({
+      query: ({ fromDate, toDate } = {}) => ({
         url: '/admin/reports/monthly',
-        params: { year, month }
+        params: rangeParams({ fromDate, toDate })
       }),
       transformResponse: (response) => {
         const data = unwrapData(response)
@@ -135,11 +154,11 @@ export const reportsApi = apiSlice.injectEndpoints({
       providesTags: [{ type: 'Report', id: 'MONTHLY' }]
     }),
 
-    // GET {{base_url}}/admin/reports/late?year=&month=&page=&limit=
+    // GET {{server_url}}/admin/reports/late?from_date=&to_date=&page=&limit=
     getLateReport: builder.query({
-      query: ({ year, month, page = 1, limit = 20 } = {}) => ({
+      query: ({ fromDate, toDate, page = 1, limit = 20 } = {}) => ({
         url: '/admin/reports/late',
-        params: { year, month, page, limit }
+        params: { ...rangeParams({ fromDate, toDate }), page, limit }
       }),
       transformResponse: (response) => ({
         items: (unwrapData(response)?.items || []).map(normalizeLateRow),
@@ -148,11 +167,11 @@ export const reportsApi = apiSlice.injectEndpoints({
       providesTags: [{ type: 'Report', id: 'LATE' }]
     }),
 
-    // GET {{base_url}}/admin/reports/leave?year=&month=&page=&limit=
+    // GET {{server_url}}/admin/reports/leave?from_date=&to_date=&page=&limit=
     getLeaveReport: builder.query({
-      query: ({ year, month, page = 1, limit = 20 } = {}) => ({
+      query: ({ fromDate, toDate, page = 1, limit = 20 } = {}) => ({
         url: '/admin/reports/leave',
-        params: { year, month, page, limit }
+        params: { ...rangeParams({ fromDate, toDate }), page, limit }
       }),
       transformResponse: (response) => ({
         items: (unwrapData(response)?.items || []).map(normalizeLeaveRow),
