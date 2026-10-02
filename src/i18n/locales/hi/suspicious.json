@@ -1,0 +1,31 @@
+{
+  "title": "संदिग्ध प्रयास",
+  "subtitle": "सिस्टम द्वारा चिह्नित उपस्थिति प्रयास, जैसे नकली (मॉक) लोकेशन का उपयोग।",
+  "summary": {
+    "total_one": "{{count}} प्रयास",
+    "total_other": "{{count}} प्रयास",
+    "blocked_one": "इस पेज पर {{count}} ब्लॉक",
+    "blocked_other": "इस पेज पर {{count}} ब्लॉक"
+  },
+  "loadFailed": "संदिग्ध प्रयास लोड नहीं हो सके।",
+  "employeeFallback": "कर्मचारी #{{id}}",
+  "idLabel": "आईडी: {{id}}",
+  "accuracy": "सटीकता: {{value}} मी.",
+  "columns": {
+    "employee": "कर्मचारी",
+    "action": "कार्रवाई",
+    "type": "कारण",
+    "result": "परिणाम",
+    "location": "लोकेशन",
+    "device": "डिवाइस",
+    "attendanceDate": "उपस्थिति तिथि",
+    "attemptedAt": "प्रयास का समय"
+  },
+  "actions": {
+    "CHECK_IN": "चेक-इन",
+    "CHECK_OUT": "चेक-आउट"
+  },
+  "types": {
+    "MOCK_LOCATION": "नकली लोकेशन"
+  }
+}

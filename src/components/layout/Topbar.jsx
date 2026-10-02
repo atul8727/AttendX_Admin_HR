@@ -67,12 +67,12 @@ export default function Topbar() {
 
       {/* Bell + Language + Theme + Profile — right side */}
       <div className="ml-auto flex shrink-0 items-center gap-2 sm:gap-3">
-        <button
+        {/* <button
           className="grid h-10 w-10 shrink-0 place-items-center rounded-lg bg-warning/15 text-warning"
           aria-label={t('common:topbar.notifications')}
         >
           <FiBell />
-        </button>
+        </button> */}
         <LanguageSwitcher />
         <ThemeToggle />
         <div className="relative block shrink-0" ref={profileRef}>

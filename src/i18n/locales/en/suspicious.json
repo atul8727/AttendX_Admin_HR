@@ -1,0 +1,31 @@
+{
+  "title": "Suspicious Attempts",
+  "subtitle": "Attendance attempts flagged by the system, such as mock or fake location use.",
+  "summary": {
+    "total_one": "{{count}} attempt",
+    "total_other": "{{count}} attempts",
+    "blocked_one": "{{count}} blocked on this page",
+    "blocked_other": "{{count}} blocked on this page"
+  },
+  "loadFailed": "Could not load suspicious attempts.",
+  "employeeFallback": "Employee #{{id}}",
+  "idLabel": "ID: {{id}}",
+  "accuracy": "Accuracy: {{value}} m",
+  "columns": {
+    "employee": "Employee",
+    "action": "Action",
+    "type": "Reason",
+    "result": "Result",
+    "location": "Location",
+    "device": "Device",
+    "attendanceDate": "Attendance Date",
+    "attemptedAt": "Attempted At"
+  },
+  "actions": {
+    "CHECK_IN": "Check In",
+    "CHECK_OUT": "Check Out"
+  },
+  "types": {
+    "MOCK_LOCATION": "Mock Location"
+  }
+}

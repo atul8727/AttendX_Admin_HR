@@ -9,7 +9,8 @@
     "leave": "Leave",
     "holidays": "Holidays",
     "attendanceOverview": "Attendance Overrides",
-    "attendanceReport": "Attendance Report"
+    "attendanceReport": "Attendance Report",
+     "suspiciousAttempts": "Suspicious Attempts"
   },
   "breadcrumb": {
     "dashboard": "Dashboard",
@@ -25,6 +26,7 @@
     "holidays": "Holidays",
     "attendance": "Attendance",
     "correction": "Correction",
-    "reports": "Reports"
+    "reports": "Reports",
+    "suspiciousAttempts": "Suspicious Attempts"
   }
 }
