@@ -28,5 +28,7 @@ export const statusConfig = {
   Disabled: { labelKey: 'status:disabled', label: 'Disabled', color: 'warning', icon: FiAlertTriangle },
   'On Leave': { labelKey: 'status:onLeave', label: 'On Leave', color: 'secondary', icon: FiClock },
   'Log Only': { labelKey: 'status:logOnly', label: 'Log Only', color: 'teal', icon: FiCheckCircle },
-  Revoked: { labelKey: 'status:revoked', label: 'Revoked', color: 'warning', icon: FiAlertTriangle }
+  Revoked: { labelKey: 'status:revoked', label: 'Revoked', color: 'warning', icon: FiAlertTriangle },
+  Blocked: { labelKey: 'status:blocked', label: 'Blocked', color: 'danger', icon: FiXCircle },
+  Allowed: { labelKey: 'status:allowed', label: 'Allowed', color: 'warning', icon: FiAlertTriangle }
 }

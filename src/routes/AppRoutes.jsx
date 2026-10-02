@@ -23,6 +23,7 @@ const HolidayList = lazy(() => import('../modules/holidays/HolidayList.jsx'))
 const AttendanceList = lazy(() => import('../modules/attendance/AttendanceList.jsx'))
 const AttendanceCorrection = lazy(() => import('../modules/attendance/AttendanceCorrection.jsx'))
 const Reports = lazy(() => import('../modules/reports/Reports.jsx'))
+const SuspiciousAttempts = lazy(() => import('../modules/suspicious/SuspiciousAttempts.jsx'))
 
 function ProtectedRoutes() {
   const location = useLocation()
@@ -55,6 +56,7 @@ export default function AppRoutes() {
             <Route path="attendance" element={<AttendanceList />} />
             <Route path="attendance/correction" element={<AttendanceCorrection />} />
             <Route path="reports" element={<Reports />} />
+            <Route path="attendance/suspicious-attempts" element={<SuspiciousAttempts />} />
             <Route path="*" element={<Navigate to="/" replace />} />
           </Route>
         </Route>

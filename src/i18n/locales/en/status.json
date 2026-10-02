@@ -24,5 +24,7 @@
   "onLeave": "On Leave",
   "logOnly": "Log Only",
   "revoked": "Revoked",
+    "blocked": "Blocked",
+  "allowed": "Allowed",
   "all": "All"
 }

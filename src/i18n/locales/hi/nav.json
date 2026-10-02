@@ -9,7 +9,8 @@
     "leave": "छुट्टी",
     "holidays": "अवकाश",
     "attendanceOverview": "उपस्थिति ओवरराइड",
-    "attendanceReport": "उपस्थिति रिपोर्ट"
+    "attendanceReport": "उपस्थिति रिपोर्ट",
+       "suspiciousAttempts": "संदिग्ध प्रयास"
   },
   "breadcrumb": {
     "dashboard": "डैशबोर्ड",
@@ -25,6 +26,7 @@
     "holidays": "अवकाश",
     "attendance": "उपस्थिति",
     "correction": "सुधार",
-    "reports": "रिपोर्ट"
+    "reports": "रिपोर्ट",
+    "suspicious-attempts": "संदिग्ध प्रयास"
   }
 }

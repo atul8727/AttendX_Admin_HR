@@ -1,6 +1,6 @@
 export const LANGUAGES = [
-  { code: 'en', label: 'English', locale: 'en-IN', dir: 'ltr' },
-  { code: 'hi', label: 'हिन्दी', locale: 'hi-IN', dir: 'ltr' }
+  { code: 'en', label: 'EN', locale: 'en-IN', dir: 'ltr' },
+  { code: 'hi', label: 'HI', locale: 'hi-IN', dir: 'ltr' }
   // { code: 'mr', label: 'मराठी', locale: 'mr-IN', dir: 'ltr' },
 ]
 

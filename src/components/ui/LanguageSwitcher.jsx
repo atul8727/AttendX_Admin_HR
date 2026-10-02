@@ -1,5 +1,5 @@
 import { useTranslation } from 'react-i18next'
-import { FiGlobe } from 'react-icons/fi'
+import { IoIosArrowDropdown  } from 'react-icons/io'
 import { LANGUAGES } from '../../i18n/languages.js'
 
 export default function LanguageSwitcher({ className = '' }) {
@@ -9,7 +9,7 @@ export default function LanguageSwitcher({ className = '' }) {
       className={`relative flex h-10 items-center rounded-lg bg-primary/10 text-primary ${className}`}
       title={t('language.label')}
     >
-      <FiGlobe className="pointer-events-none absolute left-2.5 h-4 w-4" />
+      <IoIosArrowDropdown  className="pointer-events-none absolute left-2.5 h-4 w-4 " />
       <select
         className="h-full cursor-pointer appearance-none rounded-lg bg-transparent pl-8 pr-3 text-sm font-bold outline-none"
         value={i18n.resolvedLanguage}
