@@ -12,7 +12,7 @@
     "attendanceReport": "Attendance Report",
      "suspiciousAttempts": "Suspicious Attempts"
   },
-  "breadcrumb": {
+    "breadcrumb": {
     "dashboard": "Dashboard",
     "employees": "Employees",
     "new": "New",
@@ -27,6 +27,6 @@
     "attendance": "Attendance",
     "correction": "Correction",
     "reports": "Reports",
-    "suspiciousAttempts": "Suspicious Attempts"
+    "suspicious-attempts": "Suspicious Attempts"
   }
 }
