@@ -1,5 +1,9 @@
 import { apiSlice } from '../apiSlice.js'
-import { OVERRIDE_STATUS_LABELS } from '../../constants/attendanceOverride.js'
+import { OVERRIDE_STATUS_LABELS, toBadgeLabel } from '../../constants/attendanceOverride.js'
+
+const OVERRIDES_URL = '/admin/attendance/overrides'
+const BY_DATE_PAGE_SIZE = 100
+const BY_DATE_MAX_PAGES = 10
 
 function unwrapData(response) {
   return response?.data ?? response
@@ -19,8 +23,8 @@ function unwrapPagination(response) {
   return data?.pagination || { page: 1, limit: 20, total: unwrapCollection(response).length, total_pages: 1 }
 }
 
-// Backend date-only field ko ISO timestamp (e.g. 2026-10-04T18:30:00.000Z) bhejta hai,
-// jo IST mein 2026-10-05 hai. Isliye local timezone se YYYY-MM-DD nikalte hain.
+// Backend date-only field ko ISO timestamp bhej sakta hai (IST me din badal jata hai),
+// isliye local timezone se YYYY-MM-DD nikalte hain.
 function toDateOnly(value) {
   if (!value) return ''
   if (/^\d{4}-\d{2}-\d{2}$/.test(value)) return value
@@ -31,21 +35,14 @@ function toDateOnly(value) {
   return `${date.getFullYear()}-${month}-${day}`
 }
 
-function toStatusLabel(key) {
-  if (!key) return ''
-  if (OVERRIDE_STATUS_LABELS[key]) return OVERRIDE_STATUS_LABELS[key]
-  const words = key.replace(/_/g, ' ').toLowerCase()
-  return words.charAt(0).toUpperCase() + words.slice(1)
-}
-
-function normalizeOverride(item = {}) {
-  const status = item.status ? String(item.status).toUpperCase() : ''
+export function normalizeOverride(item = {}) {
+  const status = item.status ? String(item.status).trim().toUpperCase() : ''
   return {
     id: item.attendance_status_override_id ?? item.id,
     employeeId: item.employee_id,
     attendanceDate: toDateOnly(item.attendance_date),
     status, // raw backend value: ABSENT, HALF_DAY ...
-    statusLabel: toStatusLabel(status), // Badge ke liye: Absent, Half-day ...
+    statusLabel: OVERRIDE_STATUS_LABELS[status] || toBadgeLabel(status), // Badge ke liye
     reason: item.reason || '',
     setByAdminId: item.set_by_admin_id ?? null,
     createdAt: item.created_at,
@@ -53,12 +50,18 @@ function normalizeOverride(item = {}) {
   }
 }
 
+// Daily / monthly report ke status override se badal sakte hain, isliye unhe bhi refresh karte hain.
+const REPORT_TAGS = [
+  { type: 'Report', id: 'DAILY' },
+  { type: 'Report', id: 'MONTHLY' }
+]
+
 export const attendanceOverridesApi = apiSlice.injectEndpoints({
   endpoints: (builder) => ({
     // GET {{base_url}}/admin/attendance/overrides?employee_id=&from=&to=&page=&limit=
     getAttendanceOverrides: builder.query({
       query: ({ employeeId = '', from = '', to = '', page = 1, limit = 20 } = {}) => ({
-        url: '/admin/attendance/overrides',
+        url: OVERRIDES_URL,
         params: {
           page,
           limit,
@@ -77,31 +80,55 @@ export const attendanceOverridesApi = apiSlice.injectEndpoints({
       ]
     }),
 
+    // Ek din ke SAARE overrides (saare pages). Daily attendance list me merge karne ke kaam aata hai.
+    // arg = 'YYYY-MM-DD'
+    getOverridesByDate: builder.query({
+      async queryFn(date, _api, _extra, baseQuery) {
+        const items = []
+        let page = 1
+        let totalPages = 1
+        do {
+          const result = await baseQuery({
+            url: OVERRIDES_URL,
+            params: { from: date, to: date, page, limit: BY_DATE_PAGE_SIZE }
+          })
+          if (result.error) return { error: result.error }
+          items.push(...unwrapCollection(result.data).map(normalizeOverride))
+          totalPages = Number(unwrapPagination(result.data).total_pages) || 1
+          page += 1
+        } while (page <= totalPages && page <= BY_DATE_MAX_PAGES)
+        return { data: items.filter((item) => item.attendanceDate === date) }
+      },
+      providesTags: [{ type: 'AttendanceOverride', id: 'LIST' }]
+    }),
+
     // POST {{base_url}}/admin/attendance/overrides  body: { employee_id, attendance_date, status, reason }
+    // Backend ke sirf 3 override API hain: GET (list), POST (add), DELETE (remove). Edit/update API nahi hai.
     createAttendanceOverride: builder.mutation({
       query: ({ employeeId, attendanceDate, status, reason }) => ({
-        url: '/admin/attendance/overrides',
+        url: OVERRIDES_URL,
         method: 'POST',
         body: {
           employee_id: Number.isNaN(Number(employeeId)) ? employeeId : Number(employeeId),
           attendance_date: attendanceDate,
-          status,
-          reason
+          status: String(status || '').trim().toUpperCase(), // backend sirf PRESENT / ABSENT / HALF_DAY / ON_LEAVE leta hai
+          reason: String(reason || '').trim()
         }
       }),
       transformResponse: (response) => normalizeOverride(unwrapData(response)),
-      invalidatesTags: [{ type: 'AttendanceOverride', id: 'LIST' }]
+      invalidatesTags: [{ type: 'AttendanceOverride', id: 'LIST' }, ...REPORT_TAGS]
     }),
 
     // DELETE {{base_url}}/admin/attendance/overrides/{id}
     deleteAttendanceOverride: builder.mutation({
       query: (id) => ({
-        url: `/admin/attendance/overrides/${id}`,
+        url: `${OVERRIDES_URL}/${id}`,
         method: 'DELETE'
       }),
       invalidatesTags: (_result, _error, id) => [
         { type: 'AttendanceOverride', id },
-        { type: 'AttendanceOverride', id: 'LIST' }
+        { type: 'AttendanceOverride', id: 'LIST' },
+        ...REPORT_TAGS
       ]
     })
   })
@@ -109,6 +136,7 @@ export const attendanceOverridesApi = apiSlice.injectEndpoints({
 
 export const {
   useGetAttendanceOverridesQuery,
+  useGetOverridesByDateQuery,
   useCreateAttendanceOverrideMutation,
   useDeleteAttendanceOverrideMutation
 } = attendanceOverridesApi

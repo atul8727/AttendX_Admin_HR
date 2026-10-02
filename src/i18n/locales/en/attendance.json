@@ -1,8 +1,45 @@
 {
   "overview": {
-    "title": "Attendance Overview", "subtitle": "Review each employee's attendance for a selected day.", "tab": "Overview", "overridesTab": "Manual Overrides", "date": "Date", "previousDay": "Previous day", "nextDay": "Next day", "search": "Search employee", "searchPlaceholder": "Name or employee code", "status": "Status", "pageSearchHint": "Search and status filters apply to the loaded page.",
-    "stats": { "total": "Total (this page)", "present": "Present (this page)", "absent": "Absent (this page)", "onLeave": "On leave (this page)", "late": "Late (this page)" },
-    "columns": { "employee": "Employee", "status": "Status", "checkIn": "Check In", "checkOut": "Check Out", "late": "Late (min)", "early": "Early (min)", "worked": "Worked", "actions": "Actions" }
+    "title": "Attendance",
+    "subtitle": "Review daily attendance and override any employee's status.",
+    "tab": "Daily Attendance",
+    "overridesTab": "Manual Overrides",
+    "date": "Date",
+    "previousDay": "Previous day",
+    "nextDay": "Next day",
+    "search": "Search employee",
+    "searchPlaceholder": "Name or employee code",
+    "status": "Status",
+    "pageSearchHint": "Search and filters apply to the loaded page.",
+    "stats": {
+      "total": "Total (this page)",
+      "present": "Present (this page)",
+      "absent": "Absent (this page)",
+      "onLeave": "On leave (this page)",
+      "late": "Late (this page)"
+    },
+    "columns": {
+      "employee": "Employee",
+      "status": "Status",
+      "checkIn": "Check In",
+      "checkOut": "Check Out",
+      "late": "Late (min)",
+      "early": "Early (min)",
+      "worked": "Worked",
+      "actions": "Actions"
+    },
+    "override": "Override",
+    "editOverride": "Edit override",
+    "revert": "Revert",
+    "overriddenBadge": "Overridden",
+    "wasStatus": "Was: {{status}}",
+    "overriddenOnly": "Overridden only",
+    "overridesFailed": "Could not load overrides for this date. Original statuses are shown.",
+    "reverted": "Override removed. Original status restored.",
+    "revertTitle": "Revert Override",
+    "revertConfirm": "Remove the override for {{name}} and go back to the original attendance status?",
+    "revertSubmit": "Revert",
+    "reverting": "Reverting..."
   },
   "list": {
     "title": "Attendance Management",
@@ -42,8 +79,10 @@
       "title": "Remove Attendance Override",
       "confirm": "Are you sure you want to remove this attendance override? This action cannot be undone.",
       "submit": "Remove Override",
-      "removing": "Removing..."
-    }
+      "removing": "Removing...",
+      "done": "Override removed."
+    },
+    "add": "Add Override"
   },
   "correction": {
     "title": "Attendance Correction",
@@ -58,5 +97,30 @@
     "saving": "Saving...",
     "saved": "Attendance override saved.",
     "saveFailed": "Could not save the override."
+  },
+  "modal": {
+    "createTitle": "Add Attendance Override",
+    "overrideTitle": "Override Attendance",
+    "employee": "Employee",
+    "date": "Date",
+    "reportStatus": "Report status",
+    "newStatus": "New status",
+    "reason": "Reason",
+    "reasonPlaceholder": "e.g. No show, no leave applied",
+    "save": "Save Override",
+    "saving": "Saving...",
+    "saved": "Attendance override saved.",
+    "saveFailed": "Could not save the override.",
+    "note": "The original check-in/check-out data stays unchanged. Only the status is overridden, and you can revert it anytime."
+  },
+  "picker": {
+    "title": "Select from Attendance List",
+    "subtitle": "Pick the date, filter the attendance list, and choose the employee whose status you want to override.",
+    "select": "Override",
+    "back": "Back to list",
+    "alreadyOverridden": "Overridden",
+    "overrideColumn": "Override",
+    "today": "Go to today",
+    "removeFirst": "Remove this override from the list first to change it."
   }
 }
