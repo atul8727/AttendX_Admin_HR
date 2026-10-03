@@ -19,8 +19,29 @@ export default {
           muted: 'rgb(var(--color-muted) / <alpha-value>)'
         }
       },
-      boxShadow: {
+           boxShadow: {
         soft: '0 18px 45px rgba(31, 38, 135, 0.12)'
+      },
+      keyframes: {
+        float: {
+          '0%, 100%': { transform: 'translateY(0)' },
+          '50%': { transform: 'translateY(-12px)' }
+        },
+        ring: {
+          '0%': { transform: 'scale(0.85)', opacity: '0.7' },
+          '100%': { transform: 'scale(1.7)', opacity: '0' }
+        },
+        'fade-up': {
+          '0%': { opacity: '0', transform: 'translateY(16px)' },
+          '100%': { opacity: '1', transform: 'translateY(0)' }
+        }
+      },
+      animation: {
+        float: 'float 5s ease-in-out infinite',
+        'float-slow': 'float 8s ease-in-out infinite',
+        ring: 'ring 3s ease-out infinite',
+        'spin-slow': 'spin 18s linear infinite',
+        'fade-up': 'fade-up 0.6s ease-out both'
       }
     }
   },

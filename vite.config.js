@@ -1,6 +1,10 @@
 import { defineConfig } from 'vitest/config'
 import react from '@vitejs/plugin-react'
 
+// dashboardApi.test.js IST (Asia/Kolkata) maan kar likha hai; TZ fix na ho to dusre timezone me fail hota tha.
+// eslint-disable-next-line no-undef
+process.env.TZ = 'Asia/Kolkata'
+
 export default defineConfig({
   plugins: [react()],
   test: {
