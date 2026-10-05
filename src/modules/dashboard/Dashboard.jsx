@@ -21,6 +21,21 @@ const TONES = {
   info: 'bg-info/10 text-info'
 }
 
+// Har attendance status ka apna alag route.
+// NOTE: keys ko constants/dashboard.js ke ATTENDANCE_STATUS_META se match kar lena.
+const STATUS_ROUTES = {
+  HOLIDAY: '/holidays',
+  HALF_DAY_HOLIDAY: '/holidays',
+  CHECKED_IN: '/reports',
+  CHECKED_OUT: '/reports',
+  NOT_CHECKED_IN: '/reports',
+  ABSENT: '/reports',
+  ON_LEAVE: '/leave/requests',
+  HALF_DAY_LEAVE: '/leave/requests'
+}
+
+const getSegmentRoute = (status) => STATUS_ROUTES[status] ?? '/reports'
+
 function parseDate(value) {
   return value ? new Date(`${value}T00:00:00`) : null
 }
@@ -189,8 +204,8 @@ export default function Dashboard() {
 
       <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
         <KpiCard label={t('kpi.activeEmployees')} value={data.totalActiveEmployees} hint={t('kpi.activeEmployeesHint')} icon={FiUsers} tone="primary" to="/employees" />
-        <KpiCard label={t('kpi.checkedIn')} value={checkedIn} hint={t('kpi.checkedInHint')} icon={FiActivity} tone="success" to="/attendance" />
-        <KpiCard label={t('kpi.lateToday')} value={data.lateToday} hint={t('kpi.lateTodayHint')} icon={FiClock} tone="warning" to="/attendance" />
+        <KpiCard label={t('kpi.checkedIn')} value={checkedIn} hint={t('kpi.checkedInHint')} icon={FiActivity} tone="success" to="/reports" />
+        <KpiCard label={t('kpi.lateToday')} value={data.lateToday} hint={t('kpi.lateTodayHint')} icon={FiClock} tone="warning" to="/reports" />
         <KpiCard
           label={t('kpi.pendingRequests')}
           value={pendingTotal}
@@ -208,7 +223,7 @@ export default function Dashboard() {
               <h2 className="text-lg font-bold">{t('attendance.title')}</h2>
               <p className="text-xs text-app-muted">{t('attendance.subtitle')}</p>
             </div>
-            <Link to="/attendance" className="text-sm font-bold text-primary hover:underline">
+            <Link to="/reports" className="text-sm font-bold text-primary hover:underline">
               {t('attendance.viewAll')}
             </Link>
           </div>
@@ -223,7 +238,7 @@ export default function Dashboard() {
                   return (
                     <Link
                       key={segment.status}
-                      to="/attendance"
+                      to={getSegmentRoute(segment.status)}
                       className="flex items-center gap-3 rounded-lg border border-primary/10 bg-app-bg p-3 transition hover:border-primary/30 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
                     >
                       <span className={`grid h-9 w-9 shrink-0 place-items-center rounded-lg ${segment.tone}`}>
