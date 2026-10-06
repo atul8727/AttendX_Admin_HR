@@ -40,7 +40,7 @@ export default function TodayAttendanceLog({ date, refreshMs }) {
             {total > rows.length ? t('log.showing', { shown: rows.length, total }) : t('log.todayRecords')}
           </p>
         </div>
-        <Link to="/attendance" className="text-sm font-bold text-primary hover:underline">
+        <Link to="/reports" className="text-sm font-bold text-primary hover:underline">
           {t('attendance.viewAll')}
         </Link>
       </div>
