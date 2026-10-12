@@ -99,52 +99,76 @@ function DeviceHistorySummaryCell({ employeeId }) {
 function DeviceDetailCard({ device }) {
   const { t } = useTranslation('devices')
   const formatDateTime = useDateTime()
-  const title = device.deviceModel || device.deviceName || device.deviceId || t('card.unknown')
+  const title =
+    device.deviceModel ||
+    device.deviceName ||
+    device.deviceId ||
+    t('card.unknown')
 
   return (
-    <div className="rounded-lg border border-primary/10 bg-app-bg p-4">
+    <div className="rounded-xl border border-primary/10 bg-app-bg p-4 transition-shadow hover:shadow-md sm:p-5">
+      {/* Device header */}
       <div className="flex flex-wrap items-start justify-between gap-3">
-        <div className="flex min-w-0 items-start gap-3">
-          <div className="grid h-11 w-11 shrink-0 place-items-center rounded-lg bg-primary/10 text-primary">
+        <div className="flex min-w-0 items-center gap-3">
+          <div className="grid h-12 w-12 shrink-0 place-items-center rounded-xl bg-primary/10 text-primary">
             <FiSmartphone className="h-5 w-5" />
           </div>
+
           <div className="min-w-0">
-            <p className="break-words text-base font-black text-app-text">{title}</p>
-            <p className="mt-1 text-xs font-semibold text-app-muted">{device.platform || '-'}</p>
+            <p className="break-words text-base font-bold text-app-text sm:text-lg">
+              {title}
+            </p>
+            <p className="mt-1 text-sm text-app-muted">
+              {device.platform || '-'}
+            </p>
           </div>
         </div>
+
         <Badge status={device.status} />
       </div>
 
-      <div className="mt-4 grid gap-3 md:grid-cols-2">
-        <div className="rounded-lg bg-app-surface p-3">
-          {/* <p className="text-xs font-bold uppercase text-app-muted">Employee Device ID</p> */}
-          <p className="mt-1 break-words text-sm font-semibold text-app-text">{device.id ?? '-'}</p>
+      {/* Device details — internal database ID intentionally hidden */}
+      <div className="mt-5 grid gap-3 sm:grid-cols-2">
+        <div className="rounded-lg border border-primary/5 bg-app-surface p-3">
+          <p className="text-xs font-semibold uppercase tracking-wide text-app-muted">
+            {t('card.deviceId')}
+          </p>
+          <p className="mt-1 break-all text-sm font-semibold text-app-text">
+            {device.deviceId || '-'}
+          </p>
         </div>
-        <div className="rounded-lg bg-app-surface p-3">
-          <p className="text-xs font-bold uppercase text-app-muted">{t('card.deviceId')}</p>
-          <p className="mt-1 break-words text-sm font-semibold text-app-text">{device.deviceId || '-'}</p>
+
+        <div className="rounded-lg border border-primary/5 bg-app-surface p-3">
+          <p className="text-xs font-semibold uppercase tracking-wide text-app-muted">
+            {t('card.deviceModel')}
+          </p>
+          <p className="mt-1 break-words text-sm font-semibold text-app-text">
+            {device.deviceModel || '-'}
+          </p>
         </div>
-        {/* <div className="rounded-lg bg-app-surface p-3">
-          <p className="text-xs font-bold uppercase text-app-muted">Device Name</p>
-          <p className="mt-1 break-words text-sm font-semibold text-app-text">{device.deviceName || '-'}</p>
-        </div> */}
-        <div className="rounded-lg bg-app-surface p-3">
-          <p className="text-xs font-bold uppercase text-app-muted">{t('card.deviceModel')}</p>
-          <p className="mt-1 break-words text-sm font-semibold text-app-text">{device.deviceModel || '-'}</p>
+
+        <div className="rounded-lg border border-primary/5 bg-app-surface p-3">
+          <p className="text-xs font-semibold uppercase tracking-wide text-app-muted">
+            {t('card.registeredAt')}
+          </p>
+          <p className="mt-1 text-sm font-semibold text-app-text">
+            {formatDateTime(device.registeredAt)}
+          </p>
         </div>
-        <div className="rounded-lg bg-app-surface p-3">
-          <p className="text-xs font-bold uppercase text-app-muted">{t('card.registeredAt')}</p>
-          <p className="mt-1 text-sm font-semibold text-app-text">{formatDateTime(device.registeredAt)}</p>
-        </div>
-        <div className="rounded-lg bg-app-surface p-3">
-          <p className="text-xs font-bold uppercase text-app-muted">{t('card.lastLoginAt')}</p>
-          <p className="mt-1 text-sm font-semibold text-app-text">{formatDateTime(device.lastLoginAt)}</p>
+
+        <div className="rounded-lg border border-primary/5 bg-app-surface p-3">
+          <p className="text-xs font-semibold uppercase tracking-wide text-app-muted">
+            {t('card.lastLoginAt')}
+          </p>
+          <p className="mt-1 text-sm font-semibold text-app-text">
+            {formatDateTime(device.lastLoginAt)}
+          </p>
         </div>
       </div>
     </div>
   )
 }
+
 
 function EmployeeDeviceHistoryModal({ employee, onClose }) {
   const { t } = useTranslation('devices')
