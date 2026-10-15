@@ -18,21 +18,20 @@ import { getApiErrorMessage } from '../../lib/apiError.js'
 import { toLocalDateString } from '../../lib/date.js'
 import { useFormatters } from '../../lib/format.js'
 
-// Local (device ke timezone) ke hisaab se YYYY-MM-DD.
-// toISOString() UTC deta hai, isliye India mein subah 5:30 se pehle kal ki date aa jati thi.
+
 const NOW = new Date()
-// Default range: current month ki 1 tareekh se aaj tak
+
 const DEFAULT_FROM_DATE = toLocalDateString(new Date(NOW.getFullYear(), NOW.getMonth(), 1))
 const DEFAULT_TO_DATE = toLocalDateString(NOW)
 
-// Daily sabse pehle, Employee Report sabse aakhir mein
+
 const TABS = [
   { key: 'daily', icon: FiCalendar }, { key: 'monthly', icon: FiPieChart }, { key: 'late', icon: FiClock }, { key: 'leave', icon: FiSun }, { key: 'employee', icon: FiUser }
 ]
 
 const DEFAULT_TAB = 'daily'
 
-// From <= To hona chahiye (YYYY-MM-DD string compare sahi chalta hai)
+
 function isValidRange(fromDate, toDate) {
   return Boolean(fromDate && toDate && fromDate <= toDate)
 }
@@ -47,7 +46,7 @@ function formatTime(value) {
   return Number.isNaN(date.getTime()) ? String(value).slice(0, 5) : date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
 }
 
-// "CHECKED_OUT" -> "Checked Out" (statusConfig.js ke Badge labels se match karne ke liye)
+
 function statusLabel(raw) {
   if (!raw) return ''
   return String(raw)
@@ -584,7 +583,7 @@ function EmployeeReportTab({ fromDate, toDate }) {
               <div>
                 <p className="text-lg font-black text-app-text">{selectedEmployee.name}</p>
                 <p className="text-sm text-app-muted">
-                  {selectedEmployee.code} · {selectedEmployee.department} · {selectedEmployee.role}
+                  {selectedEmployee.code}  {selectedEmployee.department}  {selectedEmployee.role}
                 </p>
               </div>
             </div>
@@ -618,7 +617,7 @@ function EmployeeReportTab({ fromDate, toDate }) {
               </div>
 
               {!summary && (
-                <p className="text-sm text-app-muted">Is date range ke summary me is employee ka data nahi mila.</p>
+               <p className="text-sm text-app-muted">No data found for this employee in the selected date range.</p>
               )}
 
               {date && (
@@ -638,7 +637,7 @@ function EmployeeReportTab({ fromDate, toDate }) {
                       ]}
                     />
                   ) : (
-                    <p className="text-sm text-app-muted">Is date ke liye record nahi mila.</p>
+                   <p className="text-sm text-app-muted">No record found for this date.</p>
                   )}
                 </div>
               )}

@@ -112,12 +112,11 @@ export default function EmployeeList() {
   )
   const saving = addState.isLoading || updateState.isLoading || assignState.isLoading
 
-  function openCreateModal() {
-    setEditingId(null)
-    setForm({ ...emptyForm, code: `EMP${String((pagination.total || data.length) + 1).padStart(3, '0')}` })
-    setModalOpen(true)
-  }
-
+function openCreateModal() {
+  setEditingId(null)
+  setForm({ ...emptyForm })
+  setModalOpen(true)
+}
   function openEditModal(employee) {
     setEditingId(employee.id)
     setForm({ ...emptyForm, ...employee, officeSettingId: employee.officeSettingId || '' })
@@ -275,7 +274,7 @@ export default function EmployeeList() {
           <div className="grid gap-4 md:grid-cols-2">
             <Input
               label={t('form.code')}
-              placeholder="EMP002"
+              placeholder="Enter employee code"
               value={form.code}
               onChange={(event) => setForm({ ...form, code: event.target.value })}
               disabled={Boolean(editingId)}
@@ -283,7 +282,7 @@ export default function EmployeeList() {
             />
             <Input
               label={t('form.name')}
-              placeholder="Gulshan Kumar"
+              placeholder="Enter full name"
               value={form.name}
               onChange={(event) => setForm({ ...form, name: event.target.value })}
               required
@@ -291,7 +290,7 @@ export default function EmployeeList() {
             <Input
               label={t('form.email')}
               type="email"
-              placeholder="gulshandev524@gmail.com"
+              placeholder="Enter email address"
               value={form.email}
               onChange={(event) => setForm({ ...form, email: event.target.value })}
               disabled={Boolean(editingId)}
@@ -301,7 +300,7 @@ export default function EmployeeList() {
               <Input
                 label={t('form.password')}
                 type="password"
-                placeholder="gk@123"
+                placeholder="Enter password"
                 value={form.password}
                 onChange={(event) => setForm({ ...form, password: event.target.value })}
                 required
@@ -309,7 +308,7 @@ export default function EmployeeList() {
             )}
             <Input
               label={t('form.phone')}
-              placeholder="73939391450"
+              placeholder="Enter phone number"
               value={form.phone}
               onChange={(event) => setForm({ ...form, phone: event.target.value })}
               required
