@@ -1,15 +1,196 @@
 {
-  "title": "Reports",
-  "subtitle": "Daily, monthly, late and leave reports — print or download as Excel.",
-  "tabs": { "daily": "Daily", "monthly": "Monthly", "late": "Late", "leave": "Leave", "employee": "Employee Report" },
-  "filters": { "fromDate": "From date", "toDate": "To date", "year": "Year", "month": "Month", "date": "Date", "specificDate": "Specific date (optional)", "searchEmployee": "Search employee", "searchPlaceholder": "Name or employee code" },
-  "actions": { "print": "Print", "printSavePdf": "Print / Save PDF", "companyExcel": "Company Excel", "exporting": "Exporting...", "downloadExcel": "Download Excel", "preparing": "Preparing...", "view": "View", "back": "Back to list", "refreshing": "Refreshing..." },
-  "daily": { "title": "Daily Attendance Report", "columns": { "employee": "Employee", "status": "Status", "checkIn": "Check In", "checkOut": "Check Out", "late": "Late (min)", "early": "Early (min)", "worked": "Worked" } },
-  "monthly": { "title": "Monthly Attendance Summary", "weekendDays": "Weekend days", "holidayDays": "Holiday days", "columns": { "employee": "Employee", "workingDays": "Working Days", "present": "Present", "absent": "Absent", "leave": "Leave", "lateCount": "Late Count", "workedHours": "Worked Hours" } },
-  "late": { "title": "Late Arrivals Report", "columns": { "date": "Date", "employee": "Employee", "expectedIn": "Expected In", "actualIn": "Actual In", "lateMin": "Late (min)" } },
-  "leave": { "title": "Leave Report", "datesRange": "{{start}} to {{end}}", "columns": { "employee": "Employee", "type": "Leave Type", "dates": "Dates", "days": "Days", "status": "Status", "reason": "Reason" } },
-  "employee": { "title": "Employee Attendance Report", "searchHint": "Choose an employee to view their report for {{from}} to {{to}}.", "noEmployee": "No employee found.", "searching": "Searching...", "noSummary": "No monthly summary was found for this employee.", "attendanceOn": "Attendance on {{date}}", "noDateRecord": "No record was found for this date.", "lateArrivals": "Late Arrivals ({{count}})", "leaveHistory": "Leave History ({{count}})", "summary": { "present": "Present Days", "absent": "Absent Days", "leave": "Leave Days", "lateCount": "Late Count", "totalLate": "{{minutes}} min total" }, "list": { "employee": "Employee", "code": "Employee code", "email": "Email", "phone": "Phone", "status": "Status", "actions": "Actions" } },
-  "print": { "generated": "Generated:" },
-  "errors": { "invalidRange": "From date must be on or before To date.", "generic": "Something went wrong.", "exportFailed": "Excel export failed." },
-  "excel": { "sheets": { "summary": "Summary", "daily": "Daily Attendance", "late": "Late Report", "leave": "Leave Report" }, "columns": { "employeeCode": "Employee Code", "name": "Name", "department": "Department", "workingDays": "Working Days", "presentDays": "Present Days", "absentDays": "Absent Days", "leaveDays": "Leave Days", "holidayDays": "Holiday Days", "lateCount": "Late Count", "totalLate": "Total Late Min", "workedHours": "Worked Hours", "date": "Date", "status": "Status", "checkIn": "Check In", "checkOut": "Check Out", "expectedIn": "Expected In", "actualIn": "Actual In", "lateMin": "Late Min", "type": "Leave Type", "start": "Start", "end": "End", "days": "Days", "reason": "Reason" } }
+  "title": "Attendance Reports",
+  "subtitle": "Daily, monthly, late, early and leave reports — view, print or download as Excel.",
+  "tabs": {
+    "daily": "Daily",
+    "monthly": "Monthly",
+    "late": "Late",
+    "early": "Early",
+    "leave": "Leave",
+    "employee": "Employee Report"
+  },
+  "filters": {
+    "month": "Month",
+    "year": "Year",
+    "date": "Date",
+    "specificDate": "Specific date (optional)",
+    "searchEmployee": "Search employee (name / employee code)",
+    "searchPlaceholder": "e.g. Satyam Singh or F0067"
+  },
+  "actions": {
+    "print": "Print",
+    "printSavePdf": "Print / Save PDF",
+    "companyExcel": "Company Excel",
+    "exporting": "Exporting...",
+    "downloadExcel": "Download Excel",
+    "preparing": "Preparing...",
+    "view": "View",
+    "back": "Back to list",
+    "refreshing": "Refreshing..."
+  },
+  "shared": {
+    "code": "Employee Code",
+    "noData": "No records found."
+  },
+  "daily": {
+    "title": "Daily Attendance Report",
+    "empty": "No attendance records for this date.",
+    "columns": {
+      "employee": "Employee",
+      "status": "Status",
+      "shift": "Shift",
+      "checkIn": "Check In",
+      "checkOut": "Check Out",
+      "late": "Late",
+      "earlyIn": "Early In",
+      "earlyOut": "Early Out",
+      "worked": "Worked"
+    },
+    "stats": {
+      "records": "Records",
+      "late": "Late arrivals",
+      "early": "Early arrivals",
+      "checkedOut": "Checked out"
+    }
+  },
+  "monthly": {
+    "title": "Monthly Attendance Summary",
+    "empty": "No monthly data for this period.",
+    "meta": {
+      "weekend": "Weekend days",
+      "holiday": "Holiday days",
+      "working": "Working days"
+    },
+    "columns": {
+      "employee": "Employee",
+      "present": "Present",
+      "absent": "Absent",
+      "leave": "Leave",
+      "holiday": "Holiday",
+      "late": "Late",
+      "earlyIn": "Early In",
+      "earlyOut": "Early Out",
+      "worked": "Worked",
+      "attendance": "Attendance"
+    },
+    "stats": {
+      "employees": "Employees",
+      "workingDays": "Working days",
+      "late": "Late arrivals",
+      "early": "Early arrivals"
+    },
+    "units": {
+      "hint": "times / min",
+      "times_one": "time",
+      "times_other": "times",
+      "total": "{{value}}",
+      "countHeader": "Times",
+      "minHeader": "Min"
+    }
+  },
+  "late": {
+    "title": "Late Arrivals Report",
+    "empty": "No late arrivals in this period.",
+    "columns": {
+      "date": "Date",
+      "employee": "Employee",
+      "expectedIn": "Expected In",
+      "actualIn": "Actual In",
+      "late": "Late by"
+    },
+    "stats": {
+      "total": "Late arrivals",
+      "minutes": "Total late time",
+      "average": "Average late",
+      "max": "Longest late"
+    }
+  },
+  "early": {
+    "title": "Early Arrivals Report",
+    "empty": "No early arrivals in this period.",
+    "columns": {
+      "date": "Date",
+      "employee": "Employee",
+      "expectedIn": "Expected In",
+      "actualIn": "Actual In",
+      "early": "Early by"
+    },
+    "stats": {
+      "total": "Early check-ins",
+      "minutes": "Total early time",
+      "average": "Average early",
+      "best": "Earliest"
+    }
+  },
+  "leave": {
+    "title": "Leave Report",
+    "empty": "No leave records in this period.",
+    "datesRange": "{{start}} to {{end}}",
+    "columns": {
+      "employee": "Employee",
+      "type": "Leave Type",
+      "dates": "Dates",
+      "days": "Days",
+      "status": "Status",
+      "reason": "Reason"
+    },
+    "stats": {
+      "total": "Leave requests",
+      "days": "Total leave days"
+    }
+  },
+  "employee": {
+    "title": "Employee Attendance Report",
+    "searchHint": "Choose an employee to view their report for {{period}}.",
+    "noEmployee": "No employee found.",
+    "searching": "Searching...",
+    "noSummary": "No monthly summary was found for this employee in the selected period.",
+    "attendanceOn": "Attendance on {{date}}",
+    "noDateRecord": "No record was found for this date.",
+    "sections": {
+      "late": "Late Arrivals ({{count}})",
+      "early": "Early Arrivals ({{count}})",
+      "leave": "Leave History ({{count}})"
+    },
+    "stats": {
+      "present": "Present Days",
+      "absent": "Absent Days",
+      "leave": "Leave Days",
+      "late": "Late Arrivals",
+      "early": "Early Arrivals",
+      "worked": "Worked Time"
+    },
+    "statMeta": {
+      "minutesTotal": "{{value}} total"
+    },
+    "list": {
+      "employee": "Employee",
+      "code": "Employee code",
+      "email": "Email",
+      "phone": "Phone",
+      "status": "Status",
+      "actions": "Actions"
+    }
+  },
+  "print": {
+    "generated": "Generated:",
+    "records": "Records",
+    "period": "Period",
+    "department": "Department"
+  },
+  "errors": {
+    "generic": "Something went wrong.",
+    "exportFailed": "Excel export failed."
+  },
+  "excel": {
+    "metric": "Metric",
+    "value": "Value",
+    "sheets": {
+      "summary": "Summary",
+      "daily": "Daily Attendance",
+      "late": "Late Report",
+      "early": "Early Report",
+      "leave": "Leave Report"
+    }
+  }
 }

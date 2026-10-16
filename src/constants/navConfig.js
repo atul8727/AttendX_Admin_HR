@@ -1,5 +1,6 @@
 import {
   FiActivity,
+  FiBarChart2,
   FiCalendar,
   FiClipboard,
   FiCpu,
@@ -44,6 +45,7 @@ export const navGroups = [
         activeOn: ['/attendance', '/attendance/correction']
       },
       { labelKey: 'nav:items.attendanceReport', path: '/reports', icon: FiFileText },
+      { labelKey: 'nav:items.reportCenter', path: '/report-center', icon: FiBarChart2 },
       { labelKey: 'nav:items.suspiciousAttempts', path: '/attendance/suspicious-attempts', icon: FiShieldOff }
     ]
   }

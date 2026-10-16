@@ -4,9 +4,6 @@ import AdminLayout from '../components/layout/AdminLayout.jsx'
 import Loader from '../components/ui/Loader.jsx'
 // import { getAuthToken } from '../store/apiSlice.js'
 import { hasValidSession } from '../store/apiSlice.js'
-
-// import ki jagah lazy() — har module ab apna alag JS chunk banega,
-// aur tabhi download hoga jab woh route visit ho.
 const Login = lazy(() => import('../modules/auth/Login.jsx'))
 const Dashboard = lazy(() => import('../modules/dashboard/Dashboard.jsx'))
 const EmployeeList = lazy(() => import('../modules/employees/EmployeeList.jsx'))
@@ -23,6 +20,7 @@ const HolidayList = lazy(() => import('../modules/holidays/HolidayList.jsx'))
 const AttendanceList = lazy(() => import('../modules/attendance/AttendanceList.jsx'))
 const AttendanceCorrection = lazy(() => import('../modules/attendance/AttendanceCorrection.jsx'))
 const Reports = lazy(() => import('../modules/reports/Reports.jsx'))
+const ReportCenter = lazy(() => import('../modules/reportCenter/ReportCenter.jsx'))
 const SuspiciousAttempts = lazy(() => import('../modules/suspicious/SuspiciousAttempts.jsx'))
 
 function ProtectedRoutes() {
@@ -34,8 +32,7 @@ function ProtectedRoutes() {
 
 export default function AppRoutes() {
   return (
-    // Suspense zaroori hai lazy() ke saath — jab tak chunk download ho raha ho,
-    // ye fallback (Loader) dikhata rahega.
+
     <Suspense fallback={<Loader />}>
       <Routes>
         <Route path="login" element={<Login />} />
@@ -56,6 +53,7 @@ export default function AppRoutes() {
             <Route path="attendance" element={<AttendanceList />} />
             <Route path="attendance/correction" element={<AttendanceCorrection />} />
             <Route path="reports" element={<Reports />} />
+            <Route path="report-center" element={<ReportCenter />} />
             <Route path="attendance/suspicious-attempts" element={<SuspiciousAttempts />} />
             <Route path="*" element={<Navigate to="/" replace />} />
           </Route>

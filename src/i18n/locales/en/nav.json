@@ -1,5 +1,8 @@
 {
-  "groups": { "core": "Core", "operations": "Operations" },
+  "groups": {
+    "core": "Core",
+    "operations": "Operations"
+  },
   "items": {
     "dashboard": "Dashboard",
     "employees": "Employees",
@@ -10,9 +13,10 @@
     "holidays": "Holidays",
     "attendanceOverview": "Attendance Overrides",
     "attendanceReport": "Attendance Report",
-     "suspiciousAttempts": "Suspicious Attempts"
+    "suspiciousAttempts": "Suspicious Attempts",
+    "reportCenter": "Report Center"
   },
-    "breadcrumb": {
+  "breadcrumb": {
     "dashboard": "Dashboard",
     "employees": "Employees",
     "new": "New",
@@ -27,6 +31,7 @@
     "attendance": "Attendance",
     "correction": "Correction",
     "reports": "Reports",
-    "suspicious-attempts": "Suspicious Attempts"
+    "suspicious-attempts": "Suspicious Attempts",
+    "report-center": "Report Center"
   }
 }

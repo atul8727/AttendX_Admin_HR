@@ -1,16 +1,15 @@
 import { apiSlice } from '../apiSlice.js'
+import { toNumber } from '../../lib/reportFormat.js'
+
+
+const PAGE_LIMIT = 50
+const MAX_PAGES = 40
 
 function unwrapData(response) {
   return response?.data ?? response
 }
 
-function unwrapPagination(response) {
-  const data = unwrapData(response)
-  return data?.pagination || { page: 1, limit: 20, total: (data?.items || []).length, total_pages: 1 }
-}
-
-// Backend date/timestamp fields IST offset ke saath aate hain, isliye local
-// timezone se hi YYYY-MM-DD nikalte hain (leaveApi.js jaisa hi pattern).
+// Backend dates IST offset ke saath aati hain, isliye local timezone se YYYY-MM-DD nikalte hain.
 function toDateOnly(value) {
   if (!value) return ''
   if (/^\d{4}-\d{2}-\d{2}$/.test(value)) return value
@@ -21,24 +20,38 @@ function toDateOnly(value) {
   return `${date.getFullYear()}-${month}-${day}`
 }
 
-// Date-range filter (from_date / to_date, dono YYYY-MM-DD) ko query params me badalta hai.
-// NOTE: Monthly / Late / Leave endpoints purane backend me sirf year+month lete the.
-// Jab tak backend in teeno endpoints par from_date/to_date support na kare, hum from_date
-// se nikaale hue year+month bhi saath bhej dete hain (fallback). Backend ready hone par
-// SEND_LEGACY_MONTH_PARAMS ko false kar dena.
-const SEND_LEGACY_MONTH_PARAMS = true
+function withEmployee(params, employeeId) {
+  return employeeId ? { ...params, employee_id: employeeId } : params
+}
 
-function rangeParams({ fromDate, toDate } = {}) {
-  const params = { from_date: fromDate, to_date: toDate }
-  if (SEND_LEGACY_MONTH_PARAMS && fromDate) {
-    const [year, month] = fromDate.split('-')
-    params.year = Number(year)
-    params.month = Number(month)
+async function fetchAllPages(baseQuery, { url, params, normalize }) {
+  const items = []
+  let first = null
+  let page = 1
+  let totalPages = 1
+
+  do {
+    const result = await baseQuery({ url, params: { ...params, page, limit: PAGE_LIMIT } })
+    if (result.error) return { error: result.error }
+    const data = unwrapData(result.data)
+    if (!first) first = data
+    const start = items.length
+    items.push(...(data?.items || []).map((row, index) => normalize(row, start + index)))
+    totalPages = Number(data?.pagination?.total_pages) || 1
+    page += 1
+  } while (page <= totalPages && page <= MAX_PAGES)
+
+  return {
+    data: {
+      date: first?.date,
+      items,
+      pagination: { page: 1, limit: items.length, total: items.length, total_pages: 1 }
+    }
   }
-  return params
 }
 
 /* ------------------------------ Daily ------------------------------ */
+// GET /admin/reports/daily?date=YYYY-MM-DD&page=&limit=
 
 function normalizeDailyRow(row = {}) {
   return {
@@ -52,35 +65,46 @@ function normalizeDailyRow(row = {}) {
     expectedLogout: row.expected_logout_time,
     checkIn: row.actual_check_in,
     checkOut: row.actual_check_out,
-    lateMinutes: Number(row.late_minutes ?? 0),
-    earlyMinutes: Number(row.early_checkout_minutes ?? 0),
-    workedMinutes: Number(row.worked_minutes ?? 0),
+    lateMinutes: toNumber(row.late_minutes),
+    earlyMinutes: toNumber(row.early_checkout_minutes), // jaldi JAANE ke minutes
+    earlyCheckinMinutes: toNumber(row.early_checkin_minutes), // agar kabhi daily API bheje
+    workedMinutes: row.worked_minutes === null || row.worked_minutes === undefined ? null : toNumber(row.worked_minutes),
     isAutoCheckout: Boolean(row.is_auto_checkout)
   }
 }
 
 /* ----------------------------- Monthly ------------------------------ */
+// GET /admin/reports/monthly?year=&month=&employee_id=
 
 function normalizeMonthlyRow(row = {}) {
+  const fullLeave = toNumber(row.full_leave_days)
+  const halfLeave = toNumber(row.half_leave_days)
+  const fullHoliday = toNumber(row.full_holiday_days)
+  const halfHoliday = toNumber(row.half_holiday_days)
+
   return {
     id: row.employee_id,
     employeeId: row.employee_id,
     employeeCode: row.employee_code,
-    name: row.name,
-    workingDays: row.working_days,
-    presentDays: row.present_days,
-    absentDays: row.absent_days,
-    leaveDays: row.leave_days,
-    holidayDays: row.holiday_days,
-    lateCount: row.late_count,
-    totalLateMinutes: row.total_late_minutes,
-    earlyCount: row.early_count,
-    totalEarlyMinutes: row.total_early_minutes,
-    workedHours: row.worked_hours
+    employeeName: row.employee_name,
+    presentDays: toNumber(row.present_days),
+    absentDays: toNumber(row.missed_days) + toNumber(row.override_absent_days),
+    fullLeaveDays: fullLeave,
+    halfLeaveDays: halfLeave,
+    leaveDays: fullLeave + halfLeave * 0.5,
+    holidayDays: fullHoliday + halfHoliday * 0.5,
+    lateCount: toNumber(row.late_count),
+    totalLateMinutes: toNumber(row.total_late_minutes),
+    earlyCount: toNumber(row.early_count),
+    totalEarlyMinutes: toNumber(row.total_early_minutes),
+    earlyCheckoutCount: toNumber(row.early_checkout_count),
+    totalEarlyCheckoutMinutes: toNumber(row.total_early_checkout_minutes),
+    workedMinutes: toNumber(row.total_worked_minutes)
   }
 }
 
 /* ------------------------------- Late -------------------------------- */
+// GET /admin/reports/late?year=&month=&employee_id=&page=&limit=
 
 function normalizeLateRow(row = {}, index = 0) {
   return {
@@ -90,22 +114,40 @@ function normalizeLateRow(row = {}, index = 0) {
     employeeName: row.employee_name,
     expectedLogin: row.expected_login_time,
     checkIn: row.actual_check_in,
-    lateMinutes: Number(row.late_minutes ?? 0)
+    lateMinutes: toNumber(row.late_minutes),
+    lateDisplay: row.late_display
+  }
+}
+
+/* ------------------------------- Early -------------------------------- */
+// GET /admin/reports/early?year=&month=&employee_id=&page=&limit=
+
+function normalizeEarlyRow(row = {}, index = 0) {
+  return {
+    id: `${row.employee_code}-${toDateOnly(row.attendance_date)}-${index}`,
+    date: toDateOnly(row.attendance_date),
+    employeeCode: row.employee_code,
+    employeeName: row.employee_name,
+    expectedLogin: row.expected_login_time,
+    checkIn: row.actual_check_in,
+    earlyMinutes: toNumber(row.early_checkin_minutes),
+    earlyDisplay: row.early_display
   }
 }
 
 /* ------------------------------ Leave -------------------------------- */
+// GET /admin/reports/leave?year=&month=&employee_id=&status=&page=&limit=
 
 function normalizeLeaveRow(row = {}, index = 0) {
   return {
     id: `${row.employee_code}-${toDateOnly(row.start_date)}-${index}`,
     employeeCode: row.employee_code,
     employeeName: row.employee_name,
-    leaveTypeName: row.leave_type_name,
+    leaveTypeName: row.leave_type_name || row.leave_type || '',
     startDate: toDateOnly(row.start_date),
     endDate: toDateOnly(row.end_date),
     durationType: row.leave_duration_type,
-    totalDays: Number(row.total_days ?? 0),
+    totalDays: toNumber(row.total_days),
     status: row.status,
     reason: row.reason || '',
     rejectionReason: row.rejection_reason || '',
@@ -114,69 +156,46 @@ function normalizeLeaveRow(row = {}, index = 0) {
   }
 }
 
+const monthParams = ({ year, month, employeeId } = {}) => withEmployee({ year, month }, employeeId)
+
 export const reportsApi = apiSlice.injectEndpoints({
   endpoints: (builder) => ({
-    // GET {{base_url}}/admin/reports/daily?date=&page=&limit=
-   getDailyReport: builder.query({
-      query: ({ date, fromDate, toDate, page = 1, limit = 20 } = {}) => ({
-        url: '/admin/reports/daily',
-        params: fromDate && toDate
-          ? { date: fromDate, from_date: fromDate, to_date: toDate, page, limit }
-          : { date, page, limit }
-      }),
-      transformResponse: (response) => {
-        const data = unwrapData(response)
-        return {
-          date: data?.date,
-          items: (data?.items || []).map(normalizeDailyRow),
-          pagination: unwrapPagination(response)
-        }
-      },
+    getDailyReport: builder.query({
+      queryFn: ({ date, fromDate } = {}, _api, _extra, baseQuery) =>
+        fetchAllPages(baseQuery, { url: '/admin/reports/daily', params: { date: date || fromDate }, normalize: normalizeDailyRow }),
       providesTags: [{ type: 'Report', id: 'DAILY' }]
     }),
 
-    // GET {{server_url}}/admin/reports/monthly?from_date=&to_date=
     getMonthlyReport: builder.query({
-      query: ({ fromDate, toDate } = {}) => ({
-        url: '/admin/reports/monthly',
-        params: rangeParams({ fromDate, toDate })
-      }),
+      query: (arg) => ({ url: '/admin/reports/monthly', params: monthParams(arg) }),
       transformResponse: (response) => {
         const data = unwrapData(response)
         return {
           year: data?.year,
           month: data?.month,
-          weekendDays: data?.weekend_days,
-          holidayDays: data?.holiday_days,
+          weekendDays: toNumber(data?.weekend_days),
+          holidayDays: toNumber(data?.holiday_days),
           items: (data?.items || []).map(normalizeMonthlyRow)
         }
       },
       providesTags: [{ type: 'Report', id: 'MONTHLY' }]
     }),
 
-    // GET {{server_url}}/admin/reports/late?from_date=&to_date=&page=&limit=
     getLateReport: builder.query({
-      query: ({ fromDate, toDate, page = 1, limit = 20 } = {}) => ({
-        url: '/admin/reports/late',
-        params: { ...rangeParams({ fromDate, toDate }), page, limit }
-      }),
-      transformResponse: (response) => ({
-        items: (unwrapData(response)?.items || []).map(normalizeLateRow),
-        pagination: unwrapPagination(response)
-      }),
+      queryFn: (arg, _api, _extra, baseQuery) =>
+        fetchAllPages(baseQuery, { url: '/admin/reports/late', params: monthParams(arg), normalize: normalizeLateRow }),
       providesTags: [{ type: 'Report', id: 'LATE' }]
     }),
 
-    // GET {{server_url}}/admin/reports/leave?from_date=&to_date=&page=&limit=
+    getEarlyReport: builder.query({
+      queryFn: (arg, _api, _extra, baseQuery) =>
+        fetchAllPages(baseQuery, { url: '/admin/reports/early', params: monthParams(arg), normalize: normalizeEarlyRow }),
+      providesTags: [{ type: 'Report', id: 'EARLY' }]
+    }),
+
     getLeaveReport: builder.query({
-      query: ({ fromDate, toDate, page = 1, limit = 20 } = {}) => ({
-        url: '/admin/reports/leave',
-        params: { ...rangeParams({ fromDate, toDate }), page, limit }
-      }),
-      transformResponse: (response) => ({
-        items: (unwrapData(response)?.items || []).map(normalizeLeaveRow),
-        pagination: unwrapPagination(response)
-      }),
+      queryFn: (arg, _api, _extra, baseQuery) =>
+        fetchAllPages(baseQuery, { url: '/admin/reports/leave', params: monthParams(arg), normalize: normalizeLeaveRow }),
       providesTags: [{ type: 'Report', id: 'LEAVE' }]
     })
   })
@@ -186,5 +205,6 @@ export const {
   useGetDailyReportQuery,
   useGetMonthlyReportQuery,
   useGetLateReportQuery,
+  useGetEarlyReportQuery,
   useGetLeaveReportQuery
 } = reportsApi
