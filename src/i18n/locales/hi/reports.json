@@ -1,13 +1,196 @@
 {
-  "title": "रिपोर्ट", "subtitle": "दैनिक, मासिक, लेट और छुट्टी रिपोर्ट — प्रिंट करें या एक्सेल डाउनलोड करें।",
-  "tabs": { "daily": "दैनिक", "monthly": "मासिक", "late": "देरी", "leave": "छुट्टी", "employee": "कर्मचारी रिपोर्ट" },
-  "filters": { "fromDate": "आरंभ तारीख़", "toDate": "अंतिम तारीख़", "year": "वर्ष", "month": "महीना", "date": "तारीख़", "specificDate": "विशिष्ट तारीख़ (वैकल्पिक)", "searchEmployee": "कर्मचारी खोजें", "searchPlaceholder": "नाम या कर्मचारी कोड" },
-  "actions": { "print": "प्रिंट", "printSavePdf": "प्रिंट / PDF सहेजें", "companyExcel": "कंपनी एक्सेल", "exporting": "निर्यात हो रहा है...", "downloadExcel": "एक्सेल डाउनलोड करें", "preparing": "तैयार हो रहा है...", "view": "देखें", "back": "सूची पर वापस", "refreshing": "रीफ़्रेश हो रहा है..." },
-  "daily": { "title": "दैनिक उपस्थिति रिपोर्ट", "columns": { "employee": "कर्मचारी", "status": "स्थिति", "checkIn": "चेक इन", "checkOut": "चेक आउट", "late": "देरी (मिनट)", "early": "जल्दी (मिनट)", "worked": "कार्य समय" } },
-  "monthly": { "title": "मासिक उपस्थिति सारांश", "weekendDays": "सप्ताहांत दिन", "holidayDays": "अवकाश दिन", "columns": { "employee": "कर्मचारी", "workingDays": "कार्य दिवस", "present": "उपस्थित", "absent": "अनुपस्थित", "leave": "छुट्टी", "lateCount": "देरी संख्या", "workedHours": "कार्य घंटे" } },
-  "late": { "title": "देरी से आने की रिपोर्ट", "columns": { "date": "तारीख़", "employee": "कर्मचारी", "expectedIn": "अपेक्षित इन", "actualIn": "वास्तविक इन", "lateMin": "देरी (मिनट)" } },
-  "leave": { "title": "छुट्टी रिपोर्ट", "datesRange": "{{start}} से {{end}}", "columns": { "employee": "कर्मचारी", "type": "छुट्टी प्रकार", "dates": "तारीख़ें", "days": "दिन", "status": "स्थिति", "reason": "कारण" } },
-  "employee": { "title": "कर्मचारी उपस्थिति रिपोर्ट", "searchHint": "{{from}} से {{to}} की रिपोर्ट देखने के लिए कर्मचारी चुनें।", "noEmployee": "कोई कर्मचारी नहीं मिला।", "searching": "खोजा जा रहा है...", "noSummary": "इस कर्मचारी का मासिक सारांश नहीं मिला।", "attendanceOn": "{{date}} की उपस्थिति", "noDateRecord": "इस तारीख़ का रिकॉर्ड नहीं मिला।", "lateArrivals": "देरी से आगमन ({{count}})", "leaveHistory": "छुट्टी इतिहास ({{count}})", "summary": { "present": "उपस्थित दिन", "absent": "अनुपस्थित दिन", "leave": "छुट्टी दिन", "lateCount": "देरी संख्या", "totalLate": "कुल {{minutes}} मिनट" }, "list": { "employee": "कर्मचारी", "code": "कर्मचारी कोड", "email": "ईमेल", "phone": "फ़ोन", "status": "स्थिति", "actions": "कार्रवाई" } },
-  "print": { "generated": "बनाया गया:" }, "errors": { "invalidRange": "आरंभ तारीख़, अंतिम तारीख़ से पहले या उसी दिन होनी चाहिए।", "generic": "कुछ गड़बड़ हुई।", "exportFailed": "एक्सेल निर्यात विफल हुआ।" },
-  "excel": { "sheets": { "summary": "सारांश", "daily": "दैनिक उपस्थिति", "late": "देरी रिपोर्ट", "leave": "छुट्टी रिपोर्ट" }, "columns": { "employeeCode": "कर्मचारी कोड", "name": "नाम", "department": "विभाग", "workingDays": "कार्य दिवस", "presentDays": "उपस्थित दिन", "absentDays": "अनुपस्थित दिन", "leaveDays": "छुट्टी दिन", "holidayDays": "अवकाश दिन", "lateCount": "देरी संख्या", "totalLate": "कुल देरी मिनट", "workedHours": "कार्य घंटे", "date": "तारीख़", "status": "स्थिति", "checkIn": "चेक इन", "checkOut": "चेक आउट", "expectedIn": "अपेक्षित इन", "actualIn": "वास्तविक इन", "lateMin": "देरी मिनट", "type": "छुट्टी प्रकार", "start": "आरंभ", "end": "समाप्ति", "days": "दिन", "reason": "कारण" } }
+  "title": "उपस्थिति रिपोर्ट",
+  "subtitle": "दैनिक, मासिक, देरी, जल्दी और छुट्टी रिपोर्ट — देखें, प्रिंट करें या एक्सेल डाउनलोड करें।",
+  "tabs": {
+    "daily": "दैनिक",
+    "monthly": "मासिक",
+    "late": "देरी",
+    "early": "जल्दी",
+    "leave": "छुट्टी",
+    "employee": "कर्मचारी रिपोर्ट"
+  },
+  "filters": {
+    "month": "महीना",
+    "year": "वर्ष",
+    "date": "तारीख़",
+    "specificDate": "विशिष्ट तारीख़ (वैकल्पिक)",
+    "searchEmployee": "कर्मचारी खोजें (नाम / कर्मचारी कोड)",
+    "searchPlaceholder": "जैसे Satyam Singh या F0067"
+  },
+  "actions": {
+    "print": "प्रिंट",
+    "printSavePdf": "प्रिंट / PDF सहेजें",
+    "companyExcel": "कंपनी एक्सेल",
+    "exporting": "निर्यात हो रहा है...",
+    "downloadExcel": "एक्सेल डाउनलोड करें",
+    "preparing": "तैयार हो रहा है...",
+    "view": "देखें",
+    "back": "सूची पर वापस",
+    "refreshing": "रीफ़्रेश हो रहा है..."
+  },
+  "shared": {
+    "code": "कर्मचारी कोड",
+    "noData": "कोई रिकॉर्ड नहीं मिला।"
+  },
+  "daily": {
+    "title": "दैनिक उपस्थिति रिपोर्ट",
+    "empty": "इस तारीख़ का कोई उपस्थिति रिकॉर्ड नहीं है।",
+    "columns": {
+      "employee": "कर्मचारी",
+      "status": "स्थिति",
+      "shift": "शिफ्ट",
+      "checkIn": "चेक इन",
+      "checkOut": "चेक आउट",
+      "late": "देरी",
+      "earlyIn": "जल्दी आगमन",
+      "earlyOut": "जल्दी प्रस्थान",
+      "worked": "कार्य समय"
+    },
+    "stats": {
+      "records": "रिकॉर्ड",
+      "late": "देरी से आए",
+      "early": "जल्दी आए",
+      "checkedOut": "चेक आउट किया"
+    }
+  },
+  "monthly": {
+    "title": "मासिक उपस्थिति सारांश",
+    "empty": "इस अवधि का मासिक डेटा नहीं है।",
+    "meta": {
+      "weekend": "सप्ताहांत दिन",
+      "holiday": "अवकाश दिन",
+      "working": "कार्य दिवस"
+    },
+    "columns": {
+      "employee": "कर्मचारी",
+      "present": "उपस्थित",
+      "absent": "अनुपस्थित",
+      "leave": "छुट्टी",
+      "holiday": "अवकाश",
+      "late": "देरी",
+      "earlyIn": "जल्दी आगमन",
+      "earlyOut": "जल्दी प्रस्थान",
+      "worked": "कार्य समय",
+      "attendance": "उपस्थिति"
+    },
+    "stats": {
+      "employees": "कर्मचारी",
+      "workingDays": "कार्य दिवस",
+      "late": "देरी से आगमन",
+      "early": "जल्दी आगमन"
+    },
+    "units": {
+      "hint": "बार / मिनट",
+      "times_one": "बार",
+      "times_other": "बार",
+      "total": "{{value}}",
+      "countHeader": "बार",
+      "minHeader": "मिनट"
+    }
+  },
+  "late": {
+    "title": "देरी से आने की रिपोर्ट",
+    "empty": "इस अवधि में कोई देरी से आगमन नहीं है।",
+    "columns": {
+      "date": "तारीख़",
+      "employee": "कर्मचारी",
+      "expectedIn": "अपेक्षित इन",
+      "actualIn": "वास्तविक इन",
+      "late": "कितनी देरी"
+    },
+    "stats": {
+      "total": "देरी से आगमन",
+      "minutes": "कुल देरी",
+      "average": "औसत देरी",
+      "max": "सबसे ज़्यादा देरी"
+    }
+  },
+  "early": {
+    "title": "जल्दी आगमन रिपोर्ट",
+    "empty": "इस अवधि में कोई जल्दी आगमन नहीं है।",
+    "columns": {
+      "date": "तारीख़",
+      "employee": "कर्मचारी",
+      "expectedIn": "अपेक्षित इन",
+      "actualIn": "वास्तविक इन",
+      "early": "कितना जल्दी"
+    },
+    "stats": {
+      "total": "जल्दी चेक-इन",
+      "minutes": "कुल जल्दी समय",
+      "average": "औसत जल्दी",
+      "best": "सबसे जल्दी"
+    }
+  },
+  "leave": {
+    "title": "छुट्टी रिपोर्ट",
+    "empty": "इस अवधि में कोई छुट्टी रिकॉर्ड नहीं है।",
+    "datesRange": "{{start}} से {{end}}",
+    "columns": {
+      "employee": "कर्मचारी",
+      "type": "छुट्टी प्रकार",
+      "dates": "तारीख़ें",
+      "days": "दिन",
+      "status": "स्थिति",
+      "reason": "कारण"
+    },
+    "stats": {
+      "total": "छुट्टी अनुरोध",
+      "days": "कुल छुट्टी दिन"
+    }
+  },
+  "employee": {
+    "title": "कर्मचारी उपस्थिति रिपोर्ट",
+    "searchHint": "{{period}} की रिपोर्ट देखने के लिए कर्मचारी चुनें।",
+    "noEmployee": "कोई कर्मचारी नहीं मिला।",
+    "searching": "खोजा जा रहा है...",
+    "noSummary": "चुनी गई अवधि में इस कर्मचारी का मासिक सारांश नहीं मिला।",
+    "attendanceOn": "{{date}} की उपस्थिति",
+    "noDateRecord": "इस तारीख़ का रिकॉर्ड नहीं मिला।",
+    "sections": {
+      "late": "देरी से आगमन ({{count}})",
+      "early": "जल्दी आगमन ({{count}})",
+      "leave": "छुट्टी इतिहास ({{count}})"
+    },
+    "stats": {
+      "present": "उपस्थित दिन",
+      "absent": "अनुपस्थित दिन",
+      "leave": "छुट्टी दिन",
+      "late": "देरी से आगमन",
+      "early": "जल्दी आगमन",
+      "worked": "कार्य समय"
+    },
+    "statMeta": {
+      "minutesTotal": "कुल {{value}}"
+    },
+    "list": {
+      "employee": "कर्मचारी",
+      "code": "कर्मचारी कोड",
+      "email": "ईमेल",
+      "phone": "फ़ोन",
+      "status": "स्थिति",
+      "actions": "कार्रवाई"
+    }
+  },
+  "print": {
+    "generated": "बनाया गया:",
+    "records": "रिकॉर्ड",
+    "period": "अवधि",
+    "department": "विभाग"
+  },
+  "errors": {
+    "generic": "कुछ गड़बड़ हुई।",
+    "exportFailed": "एक्सेल निर्यात विफल हुआ।"
+  },
+  "excel": {
+    "metric": "मापदंड",
+    "value": "मान",
+    "sheets": {
+      "summary": "सारांश",
+      "daily": "दैनिक उपस्थिति",
+      "late": "देरी रिपोर्ट",
+      "early": "जल्दी रिपोर्ट",
+      "leave": "छुट्टी रिपोर्ट"
+    }
+  }
 }

@@ -1,0 +1,65 @@
+{
+  "title": "Report Center",
+  "subtitle": "Monthly attendance overview — see the summary here, open the full sheet, print it, or download the same data as Excel.",
+  "filters": {
+    "month": "Month",
+    "year": "Year",
+    "search": "Search employee",
+    "searchPlaceholder": "Name or employee code"
+  },
+  "actions": {
+    "refresh": "Refresh",
+    "print": "Print / Save PDF",
+    "downloadExcel": "Download Excel",
+    "retry": "Try again",
+    "viewFull": "View Full Sheet",
+    "close": "Close"
+  },
+  "stats": {
+    "employees": "Employees",
+    "days": "Days in month",
+    "present": "Present",
+    "absent": "Absent",
+    "leave": "Leave",
+    "late": "Late",
+    "halfday": "Half day",
+    "holiday": "Holiday",
+    "weekend": "Weekly off",
+    "wfh": "Work from home"
+  },
+  "summary": {
+    "title": "Employee summary",
+    "employee": "Employee",
+    "attendance": "Attendance"
+  },
+  "full": {
+    "title": "Full Attendance Sheet"
+  },
+  "distribution": {
+    "title": "Attendance distribution",
+    "subtitle": "Share of all day-entries in this report"
+  },
+  "legend": {
+    "title": "Legend"
+  },
+  "sheet": {
+    "label": "Sheet"
+  },
+  "table": {
+    "showing": "Showing {{shown}} of {{total}} employees",
+    "noMatch": "No employee matches your search."
+  },
+  "states": {
+    "loading": "Preparing your report...",
+    "emptyTitle": "No data for this month",
+    "emptyDescription": "The server returned an empty report for the selected month and year.",
+    "errorTitle": "Could not load the report"
+  },
+  "print": {
+    "title": "Monthly Attendance Matrix",
+    "period": "Period",
+    "employees": "Employees",
+    "sheet": "Sheet",
+    "hint": "Tip: in the print dialog turn off \"Headers and footers\" for a cleaner page."
+  }
+}

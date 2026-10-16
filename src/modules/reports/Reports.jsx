@@ -1,81 +1,129 @@
 import { useEffect, useMemo, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useSearchParams } from 'react-router-dom'
-import { FiArrowLeft, FiCalendar, FiClock, FiDownload, FiEye, FiPieChart, FiPrinter, FiSearch, FiSun, FiUser, FiX } from 'react-icons/fi'
+import {
+  FiArrowLeft, FiCalendar, FiCheckCircle, FiClock, FiDownload, FiEye, FiLogOut, FiPieChart,
+  FiPrinter, FiSearch, FiSun, FiSunrise, FiUser, FiUsers, FiX
+} from 'react-icons/fi'
 import Avatar from '../../components/ui/Avatar.jsx'
 import Badge from '../../components/ui/Badge.jsx'
 import Button from '../../components/ui/Button.jsx'
 import Card from '../../components/ui/Card.jsx'
 import Input from '../../components/ui/Input.jsx'
 import Loader from '../../components/ui/Loader.jsx'
+import Select from '../../components/ui/Select.jsx'
 import StatCard from '../../components/ui/StatCard.jsx'
 import Table from '../../components/ui/Table.jsx'
 import ReportPrintHeader from '../../components/reports/ReportPrintHeader.jsx'
+import ReportTab from './components/ReportTab.jsx'
 import { useGetEmployeeQuery, useGetEmployeesQuery } from '../../store/api/employeesApi.js'
-import { useGetDailyReportQuery, useGetLateReportQuery, useGetLeaveReportQuery, useGetMonthlyReportQuery } from '../../store/api/reportsApi.js'
-import { downloadCompanyExcelReport, downloadEmployeeExcelReport } from '../../services/reportExportService.js'
-import { getApiErrorMessage } from '../../lib/apiError.js'
+import {
+  useGetDailyReportQuery,
+  useGetEarlyReportQuery,
+  useGetLateReportQuery,
+  useGetLeaveReportQuery,
+  useGetMonthlyReportQuery
+} from '../../store/api/reportsApi.js'
+import { downloadCompanyExcelReport, downloadWorkbook } from '../../services/reportExportService.js'
+import { printReport } from '../../lib/printReport.js'
 import { toLocalDateString } from '../../lib/date.js'
 import { useFormatters } from '../../lib/format.js'
-
+import { daysInMonth, formatClock, formatDurationMin, formatMinutes, formatShortTime, padMonth, periodKey, statusLabel } from '../../lib/reportFormat.js'
 
 const NOW = new Date()
-
-const DEFAULT_FROM_DATE = toLocalDateString(new Date(NOW.getFullYear(), NOW.getMonth(), 1))
-const DEFAULT_TO_DATE = toLocalDateString(NOW)
-
+const CURRENT_YEAR = NOW.getFullYear()
+const YEARS = Array.from({ length: 6 }, (_, index) => CURRENT_YEAR - 4 + index)
 
 const TABS = [
-  { key: 'daily', icon: FiCalendar }, { key: 'monthly', icon: FiPieChart }, { key: 'late', icon: FiClock }, { key: 'leave', icon: FiSun }, { key: 'employee', icon: FiUser }
+  { key: 'daily', icon: FiCalendar },
+  { key: 'monthly', icon: FiPieChart },
+  { key: 'late', icon: FiClock },
+  { key: 'early', icon: FiSunrise },
+  { key: 'leave', icon: FiSun },
+  { key: 'employee', icon: FiUser }
 ]
 
 const DEFAULT_TAB = 'daily'
 
+/* ------------------------------ small UI bits ------------------------------ */
 
-function isValidRange(fromDate, toDate) {
-  return Boolean(fromDate && toDate && fromDate <= toDate)
+function EmployeeCell({ name, code }) {
+  return (
+    <div className="min-w-[150px] whitespace-nowrap py-0.5">
+      <p className="font-bold text-app-text whitespace-nowrap text-sm leading-snug">{name}</p>
+      {code && <p className="text-xs font-semibold text-app-muted whitespace-nowrap tracking-wide">{code}</p>}
+    </div>
+  )
 }
 
-function rangeLabel(fromDate, toDate) {
-  return `${fromDate} to ${toDate}`
+const PILL_STYLES = {
+  success: 'bg-success/10 text-success',
+  warning: 'bg-warning/15 text-warning',
+  danger: 'bg-danger/10 text-danger'
 }
 
-function formatTime(value) {
-  if (!value) return '-'
-  const date = new Date(value)
-  return Number.isNaN(date.getTime()) ? String(value).slice(0, 5) : date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+function Pill({ tone = 'success', children }) {
+  return <span className={`inline-flex whitespace-nowrap rounded-full px-2.5 py-1 text-xs font-bold ${PILL_STYLES[tone]}`}>{children}</span>
 }
 
-
-function statusLabel(raw) {
-  if (!raw) return ''
-  return String(raw)
-    .replace(/_/g, ' ')
-    .toLowerCase()
-    .replace(/\b\w/g, (char) => char.toUpperCase())
+function MinutesPill({ minutes, tone }) {
+  return minutes > 0 ? <Pill tone={tone}>{formatMinutes(minutes)}</Pill> : <span className="text-app-muted">-</span>
 }
+
+function Metric({ count, minutes }) {
+  const { t } = useTranslation('reports')
+  if (!count) return <span className="text-app-muted font-medium">-</span>
+  return (
+    <div className="leading-snug whitespace-nowrap">
+      <p className="whitespace-nowrap">
+        <span className="font-extrabold text-app-text">{count}</span>{' '}
+        <span className="text-xs font-medium text-app-muted">{t('monthly.units.times', { count })}</span>
+      </p>
+      {minutes > 0 && <p className="whitespace-nowrap text-xs font-semibold text-app-muted">{formatDurationMin(minutes)}</p>}
+    </div>
+  )
+}
+
+function ratePercent(row) {
+  const base = row.presentDays + row.absentDays
+  return base ? Math.round((row.presentDays / base) * 100) : null
+}
+
+/* -------------------------------- Main page -------------------------------- */
 
 export default function Reports() {
   const { t } = useTranslation('reports')
+  const formatters = useFormatters()
   const [searchParams, setSearchParams] = useSearchParams()
   const [activeTab, setActiveTab] = useState(() => searchParams.get('tab') || DEFAULT_TAB)
-  const [fromDate, setFromDate] = useState(DEFAULT_FROM_DATE)
-  const [toDate, setToDate] = useState(DEFAULT_TO_DATE)
+  const [month, setMonth] = useState(NOW.getMonth() + 1)
+  const [year, setYear] = useState(CURRENT_YEAR)
   const [exporting, setExporting] = useState(false)
   const [exportError, setExportError] = useState('')
-  const rangeValid = isValidRange(fromDate, toDate)
+
+  const period = `${formatters.monthName(month - 1)} ${year}`
+  const monthOptions = Array.from({ length: 12 }, (_, index) => ({ value: index + 1, label: formatters.monthName(index) }))
+  const yearOptions = YEARS.map((value) => ({ value, label: String(value) }))
 
   async function handleCompanyExport() {
-    if (!rangeValid) return
     setExporting(true)
     setExportError('')
     try {
-      await downloadCompanyExcelReport({ fromDate, toDate })
+      await downloadCompanyExcelReport({ year, month })
     } catch (err) {
-      setExportError(err.message)
+      setExportError(err.message || t('errors.exportFailed'))
     } finally {
       setExporting(false)
     }
+  }
+
+  function changeTab(key) {
+    setActiveTab(key)
+    setSearchParams((current) => {
+      const next = new window.URLSearchParams(current)
+      next.set('tab', key)
+      return next
+    })
   }
 
   return (
@@ -87,17 +135,15 @@ export default function Reports() {
         </div>
 
         <div className="flex flex-wrap items-end gap-2">
-          <Input label={t('filters.fromDate')} type="date" value={fromDate} max={toDate || undefined} onChange={(event) => setFromDate(event.target.value)} className="w-40" />
-          <Input label={t('filters.toDate')} type="date" value={toDate} min={fromDate || undefined} onChange={(event) => setToDate(event.target.value)} className="w-40" />
+          <Select label={t('filters.month')} value={month} onChange={(event) => setMonth(Number(event.target.value))} options={monthOptions} className="w-40" />
+          <Select label={t('filters.year')} value={year} onChange={(event) => setYear(Number(event.target.value))} options={yearOptions} className="w-28" />
           {activeTab !== 'employee' && (
-            <Button icon={FiDownload} onClick={handleCompanyExport} disabled={exporting || !rangeValid} className="whitespace-nowrap">
+            <Button icon={FiDownload} onClick={handleCompanyExport} disabled={exporting} className="whitespace-nowrap">
               {exporting ? t('actions.exporting') : t('actions.companyExcel')}
             </Button>
           )}
         </div>
       </div>
-
-      {!rangeValid && <p className="rounded-lg bg-danger/10 p-3 text-sm font-semibold text-danger print:hidden">{t('errors.invalidRange')}</p>}
 
       {exportError && <p className="rounded-lg bg-danger/10 p-3 text-sm font-semibold text-danger print:hidden">{exportError}</p>}
 
@@ -109,7 +155,7 @@ export default function Reports() {
             <button
               key={tab.key}
               type="button"
-              onClick={() => { setActiveTab(tab.key); setSearchParams((current) => { const next = new window.URLSearchParams(current); next.set('tab', tab.key); return next }) }}
+              onClick={() => changeTab(tab.key)}
               className={`flex min-h-10 shrink-0 items-center gap-2 whitespace-nowrap rounded-xl px-4 text-sm font-bold transition-all duration-200 ease-out ${
                 isActive
                   ? 'bg-gradient-to-r from-primary to-secondary text-white shadow-[0_10px_22px_-8px_rgb(var(--color-primary)/0.6)]'
@@ -124,274 +170,341 @@ export default function Reports() {
       </div>
 
       {activeTab === 'daily' && <DailyReportTab />}
-      {activeTab === 'monthly' && <MonthlyReportTab fromDate={fromDate} toDate={toDate} />}
-      {activeTab === 'late' && <LateReportTab fromDate={fromDate} toDate={toDate} />}
-      {activeTab === 'leave' && <LeaveReportTab fromDate={fromDate} toDate={toDate} />}
-      {activeTab === 'employee' && <EmployeeReportTab fromDate={fromDate} toDate={toDate} />}
+      {activeTab === 'monthly' && <MonthlyReportTab year={year} month={month} period={period} />}
+      {activeTab === 'late' && <LateReportTab year={year} month={month} period={period} />}
+      {activeTab === 'early' && <EarlyReportTab year={year} month={month} period={period} />}
+      {activeTab === 'leave' && <LeaveReportTab year={year} month={month} period={period} />}
+      {activeTab === 'employee' && <EmployeeReportTab year={year} month={month} period={period} />}
     </div>
   )
 }
 
-/* ------------------------------ Daily tab ------------------------------ */
+/* ------------------------------- Daily tab ------------------------------- */
+// Daily API me "jaldi aane" ka data nahi hota, isliye us din ka Early API data match karte hain.
 
 function DailyReportTab() {
   const { t } = useTranslation('reports')
   const [date, setDate] = useState(() => toLocalDateString())
-  const [page, setPage] = useState(1)
-  const limit = 20
-  const { data, isLoading, isFetching, isError, error } = useGetDailyReportQuery({ date, page, limit })
-  const rows = data?.items || []
-  const pagination = data?.pagination || { page: 1, total_pages: 1, total: rows.length }
+  const [year, month] = (date || '').split('-').map(Number)
 
-  useEffect(() => {
-    setPage(1)
-  }, [date])
+  const { data, isLoading, isFetching, error } = useGetDailyReportQuery({ date }, { skip: !date })
+  const { data: earlyData } = useGetEarlyReportQuery({ year, month }, { skip: !year || !month })
+
+  const rows = useMemo(() => {
+    const earlyByCode = new Map()
+    ;(earlyData?.items || []).filter((item) => item.date === date).forEach((item) => earlyByCode.set(item.employeeCode, item.earlyMinutes))
+    return (data?.items || []).map((row) => ({
+      ...row,
+      earlyInMinutes: row.earlyCheckinMinutes || earlyByCode.get(row.employeeCode) || 0
+    }))
+  }, [data, earlyData, date])
+
+  const columns = [
+    { key: 'code', header: t('shared.code'), excelOnly: true, excel: (row) => row.employeeCode },
+    {
+      key: 'employee',
+      header: t('daily.columns.employee'),
+      headerClassName: 'min-w-[160px] whitespace-nowrap',
+      cellClassName: 'whitespace-nowrap',
+      render: (row) => <EmployeeCell name={row.employeeName} code={row.employeeCode} />,
+      excel: (row) => row.employeeName
+    },
+    { key: 'status', header: t('daily.columns.status'), headerClassName: 'whitespace-nowrap', cellClassName: 'whitespace-nowrap', render: (row) => <Badge status={statusLabel(row.status)} />, excel: (row) => statusLabel(row.status) },
+    {
+      key: 'shift',
+      header: t('daily.columns.shift'),
+      headerClassName: 'whitespace-nowrap',
+      cellClassName: 'whitespace-nowrap',
+      render: (row) => `${formatShortTime(row.expectedLogin)} – ${formatShortTime(row.expectedLogout)}`,
+      excel: (row) => `${formatShortTime(row.expectedLogin)} - ${formatShortTime(row.expectedLogout)}`
+    },
+    { key: 'checkIn', header: t('daily.columns.checkIn'), headerClassName: 'whitespace-nowrap', cellClassName: 'whitespace-nowrap font-medium', render: (row) => formatClock(row.checkIn), excel: (row) => formatClock(row.checkIn) },
+    { key: 'checkOut', header: t('daily.columns.checkOut'), headerClassName: 'whitespace-nowrap', cellClassName: 'whitespace-nowrap font-medium', render: (row) => formatClock(row.checkOut), excel: (row) => formatClock(row.checkOut) },
+    { key: 'late', header: t('daily.columns.late'), headerClassName: 'whitespace-nowrap', cellClassName: 'whitespace-nowrap', render: (row) => <MinutesPill minutes={row.lateMinutes} tone="warning" />, excel: (row) => row.lateMinutes },
+    { key: 'earlyIn', header: t('daily.columns.earlyIn'), headerClassName: 'whitespace-nowrap', cellClassName: 'whitespace-nowrap', render: (row) => <MinutesPill minutes={row.earlyInMinutes} tone="success" />, excel: (row) => row.earlyInMinutes },
+    { key: 'earlyOut', header: t('daily.columns.earlyOut'), headerClassName: 'whitespace-nowrap', cellClassName: 'whitespace-nowrap', render: (row) => <MinutesPill minutes={row.earlyMinutes} tone="danger" />, excel: (row) => row.earlyMinutes },
+    {
+      key: 'worked',
+      header: t('daily.columns.worked'),
+      headerClassName: 'whitespace-nowrap',
+      cellClassName: 'whitespace-nowrap font-medium',
+      render: (row) => (row.workedMinutes === null ? '-' : formatMinutes(row.workedMinutes)),
+      excel: (row) => (row.workedMinutes === null ? '' : formatMinutes(row.workedMinutes))
+    }
+  ]
+
+  const stats = [
+    { label: t('daily.stats.records'), value: rows.length, tone: 'primary', icon: FiUsers },
+    { label: t('daily.stats.late'), value: rows.filter((row) => row.lateMinutes > 0).length, tone: 'warning', icon: FiClock },
+    { label: t('daily.stats.early'), value: rows.filter((row) => row.earlyInMinutes > 0).length, tone: 'success', icon: FiSunrise },
+    { label: t('daily.stats.checkedOut'), value: rows.filter((row) => row.checkOut).length, tone: 'info', icon: FiLogOut }
+  ]
 
   return (
-    <Card className="space-y-4">
-      <ReportPrintHeader title={t('daily.title')} subtitle={date} />
-      <div className="flex flex-col gap-3 print:hidden sm:flex-row sm:items-end sm:justify-between">
-        <Input label={t('filters.date')} type="date" value={date} onChange={(event) => setDate(event.target.value)} className="w-full sm:w-56" />
-        <Button variant="outline" icon={FiPrinter} onClick={() => window.print()}>
-          {t('actions.print')}
-        </Button>
-      </div>
-
-      {isError && <p className="rounded-lg bg-danger/10 p-3 text-sm font-semibold text-danger">{getApiErrorMessage(error)}</p>}
-      {isFetching && !isLoading && <p className="text-sm font-semibold text-app-muted print:hidden">{t('actions.refreshing')}</p>}
-
-      {isLoading ? (
-        <Loader />
-      ) : (
-        <Table
-          rows={rows}
-          columns={[
-            {
-              key: 'employee',
-              header: t('daily.columns.employee'),
-              render: (row) => (
-                <div>
-                  <p className="font-bold">{row.employeeName}</p>
-                  <p className="text-xs text-app-muted">{row.employeeCode}</p>
-                </div>
-              )
-            },
-            { key: 'status', header: t('daily.columns.status'), render: (row) => <Badge status={statusLabel(row.status)} /> },
-            { key: 'checkIn', header: t('daily.columns.checkIn'), render: (row) => formatTime(row.checkIn) },
-            { key: 'checkOut', header: t('daily.columns.checkOut'), render: (row) => formatTime(row.checkOut) },
-            { key: 'late', header: t('daily.columns.late'), render: (row) => row.lateMinutes || 0 },
-            { key: 'early', header: t('daily.columns.early'), render: (row) => row.earlyMinutes || 0 },
-            { key: 'worked', header: t('daily.columns.worked'), render: (row) => row.workedMinutes || 0 }
-          ]}
-        />
-      )}
-
-      <div className="flex flex-col gap-3 text-sm text-app-muted print:hidden sm:flex-row sm:items-center sm:justify-between">
-        <span>
-          {t('common:pagination.summary', { page: pagination.page, totalPages: pagination.total_pages || 1, shown: rows.length, total: pagination.total ?? rows.length })}
-        </span>
-        <div className="flex gap-2">
-          <Button variant="outline" disabled={page <= 1 || isFetching} onClick={() => setPage((current) => Math.max(1, current - 1))}>
-            {t('common:actions.previous')}
-          </Button>
-          <Button variant="outline" disabled={page >= (pagination.total_pages || 1) || isFetching} onClick={() => setPage((current) => current + 1)}>
-            {t('common:actions.next')}
-          </Button>
-        </div>
-      </div>
-    </Card>
+    <ReportTab
+      title={t('daily.title')}
+      subtitle={date}
+      filename={`daily-attendance-${date}`}
+      stats={stats}
+      columns={columns}
+      rows={rows}
+      isLoading={isLoading}
+      isFetching={isFetching}
+      error={error}
+      emptyText={t('daily.empty')}
+      toolbar={<Input label={t('filters.date')} type="date" value={date} onChange={(event) => setDate(event.target.value)} className="w-full sm:w-56" />}
+    />
   )
 }
 
-/* ----------------------------- Monthly tab ------------------------------ */
+/* ------------------------------ Monthly tab ------------------------------ */
 
-function MonthlyReportTab({ fromDate, toDate }) {
-  const { data, isLoading, isError, error } = useGetMonthlyReportQuery({ fromDate, toDate }, { skip: !isValidRange(fromDate, toDate) })
+function MonthlyReportTab({ year, month, period }) {
+  const { t } = useTranslation('reports')
+  const { data, isLoading, isFetching, error } = useGetMonthlyReportQuery({ year, month })
   const rows = data?.items || []
+  const workingDays = Math.max(0, daysInMonth(year, month) - (data?.weekendDays || 0) - (data?.holidayDays || 0))
+
+  const metric = (key, header, countKey, minutesKey) => [
+    {
+      key,
+      header: `${header} (${t('monthly.units.hint')})`,
+      screenOnly: true,
+      headerClassName: 'whitespace-nowrap',
+      cellClassName: 'whitespace-nowrap',
+      render: (row) => <Metric count={row[countKey]} minutes={row[minutesKey]} />
+    },
+    { key: `${key}-count`, header: `${header} - ${t('monthly.units.countHeader')}`, excelOnly: true, excel: (row) => row[countKey] },
+    { key: `${key}-min`, header: `${header} - ${t('monthly.units.minHeader')}`, excelOnly: true, excel: (row) => row[minutesKey] }
+  ]
+
+  const columns = [
+    { key: 'code', header: t('shared.code'), excelOnly: true, excel: (row) => row.employeeCode },
+    {
+      key: 'employee',
+      header: t('monthly.columns.employee'),
+      headerClassName: 'min-w-[160px] whitespace-nowrap',
+      cellClassName: 'min-w-[160px] whitespace-nowrap',
+      render: (row) => <EmployeeCell name={row.employeeName} code={row.employeeCode} />,
+      excel: (row) => row.employeeName
+    },
+    { key: 'present', header: t('monthly.columns.present'), headerClassName: 'whitespace-nowrap', cellClassName: 'whitespace-nowrap', render: (row) => <span className="font-bold text-success">{row.presentDays}</span>, excel: (row) => row.presentDays },
+    { key: 'absent', header: t('monthly.columns.absent'), headerClassName: 'whitespace-nowrap', cellClassName: 'whitespace-nowrap', render: (row) => <span className={row.absentDays ? 'font-bold text-danger' : 'text-app-muted'}>{row.absentDays || '-'}</span>, excel: (row) => row.absentDays },
+    {
+      key: 'leave',
+      header: t('monthly.columns.leave'),
+      headerClassName: 'whitespace-nowrap',
+      cellClassName: 'whitespace-nowrap',
+      render: (row) => (row.leaveDays ? <span className="font-bold text-secondary">{row.leaveDays}</span> : <span className="text-app-muted">-</span>),
+      excel: (row) => row.leaveDays
+    },
+    { key: 'holiday', header: t('monthly.columns.holiday'), headerClassName: 'whitespace-nowrap', cellClassName: 'whitespace-nowrap font-medium', render: (row) => row.holidayDays || '-', excel: (row) => row.holidayDays },
+    ...metric('late', t('monthly.columns.late'), 'lateCount', 'totalLateMinutes'),
+    ...metric('earlyIn', t('monthly.columns.earlyIn'), 'earlyCount', 'totalEarlyMinutes'),
+    ...metric('earlyOut', t('monthly.columns.earlyOut'), 'earlyCheckoutCount', 'totalEarlyCheckoutMinutes'),
+    { key: 'worked', header: t('monthly.columns.worked'), headerClassName: 'whitespace-nowrap', cellClassName: 'whitespace-nowrap font-medium text-app-text', render: (row) => formatMinutes(row.workedMinutes), excel: (row) => formatMinutes(row.workedMinutes) },
+    {
+      key: 'attendance',
+      header: t('monthly.columns.attendance'),
+      headerClassName: 'whitespace-nowrap min-w-[140px]',
+      cellClassName: 'whitespace-nowrap',
+      render: (row) => {
+        const percent = ratePercent(row)
+        if (percent === null) return <span className="text-app-muted">-</span>
+        return (
+          <div className="flex items-center gap-2.5">
+            <div className="h-2 w-20 overflow-hidden rounded-full bg-primary/10 dark:bg-white/10 print:w-10">
+              <div className="h-full rounded-full bg-success transition-all duration-300" style={{ width: `${percent}%` }} />
+            </div>
+            <span className="text-xs font-bold text-app-text">{percent}%</span>
+          </div>
+        )
+      },
+      excel: (row) => {
+        const percent = ratePercent(row)
+        return percent === null ? '' : `${percent}%`
+      }
+    }
+  ]
+
+  const stats = [
+    { label: t('monthly.stats.employees'), value: rows.length, tone: 'primary', icon: FiUsers },
+    { label: t('monthly.stats.workingDays'), value: workingDays, tone: 'info', icon: FiCalendar, meta: `${t('monthly.meta.weekend')}: ${data?.weekendDays ?? 0} · ${t('monthly.meta.holiday')}: ${data?.holidayDays ?? 0}` },
+    { label: t('monthly.stats.late'), value: rows.reduce((sum, row) => sum + row.lateCount, 0), tone: 'warning', icon: FiClock },
+    { label: t('monthly.stats.early'), value: rows.reduce((sum, row) => sum + row.earlyCount, 0), tone: 'success', icon: FiSunrise }
+  ]
 
   return (
-    <Card className="space-y-4">
-      <ReportPrintHeader title="Monthly Attendance Summary" subtitle={rangeLabel(fromDate, toDate)} />
-      <div className="flex flex-col gap-2 print:hidden sm:flex-row sm:items-center sm:justify-between">
-        <p className="text-sm text-app-muted">
-          Weekend days: <strong className="text-app-text">{data?.weekendDays ?? '-'}</strong> · Holiday days:{' '}
-          <strong className="text-app-text">{data?.holidayDays ?? '-'}</strong>
-        </p>
-        <Button variant="outline" icon={FiPrinter} onClick={() => window.print()}>
-          Print
-        </Button>
-      </div>
-
-      {isError && <p className="rounded-lg bg-danger/10 p-3 text-sm font-semibold text-danger">{getApiErrorMessage(error)}</p>}
-
-      {isLoading ? (
-        <Loader />
-      ) : (
-        <Table
-          rows={rows}
-          columns={[
-            {
-              key: 'employee',
-              header: 'Employee',
-              render: (row) => (
-                <div>
-                  <p className="font-bold">{row.name}</p>
-                  <p className="text-xs text-app-muted">{row.employeeCode}</p>
-                </div>
-              )
-            },
-            { key: 'workingDays', header: 'Working Days', render: (row) => row.workingDays },
-            { key: 'presentDays', header: 'Present', render: (row) => row.presentDays },
-            { key: 'absentDays', header: 'Absent', render: (row) => row.absentDays },
-            { key: 'leaveDays', header: 'Leave', render: (row) => row.leaveDays },
-            { key: 'lateCount', header: 'Late Count', render: (row) => row.lateCount },
-            { key: 'workedHours', header: 'Worked Hours', render: (row) => row.workedHours }
-          ]}
-        />
-      )}
-    </Card>
+    <ReportTab
+      title={t('monthly.title')}
+      subtitle={period}
+      filename={`monthly-attendance-${periodKey(year, month)}`}
+      meta={[
+        { label: t('monthly.meta.weekend'), value: data?.weekendDays },
+        { label: t('monthly.meta.holiday'), value: data?.holidayDays },
+        { label: t('monthly.meta.working'), value: workingDays }
+      ]}
+      stats={stats}
+      columns={columns}
+      rows={rows}
+      isLoading={isLoading}
+      isFetching={isFetching}
+      error={error}
+      emptyText={t('monthly.empty')}
+    />
   )
 }
 
 /* ------------------------------- Late tab -------------------------------- */
 
-function LateReportTab({ fromDate, toDate }) {
-  const [page, setPage] = useState(1)
-  const limit = 20
-  const { data, isLoading, isFetching, isError, error } = useGetLateReportQuery({ fromDate, toDate, page, limit }, { skip: !isValidRange(fromDate, toDate) })
+function LateReportTab({ year, month, period }) {
+  const { t } = useTranslation('reports')
+  const { data, isLoading, isFetching, error } = useGetLateReportQuery({ year, month })
   const rows = data?.items || []
-  const pagination = data?.pagination || { page: 1, total_pages: 1, total: rows.length }
+  const totalMinutes = rows.reduce((sum, row) => sum + row.lateMinutes, 0)
 
-  useEffect(() => {
-    setPage(1)
-  }, [fromDate, toDate])
+  const columns = [
+    { key: 'date', header: t('late.columns.date'), render: (row) => row.date, excel: (row) => row.date },
+    { key: 'code', header: t('shared.code'), excelOnly: true, excel: (row) => row.employeeCode },
+    {
+      key: 'employee',
+      header: t('late.columns.employee'),
+      headerClassName: 'min-w-[160px] whitespace-nowrap',
+      cellClassName: 'whitespace-nowrap',
+      render: (row) => <EmployeeCell name={row.employeeName} code={row.employeeCode} />,
+      excel: (row) => row.employeeName
+    },
+    { key: 'expected', header: t('late.columns.expectedIn'), render: (row) => formatShortTime(row.expectedLogin), excel: (row) => formatShortTime(row.expectedLogin) },
+    { key: 'actual', header: t('late.columns.actualIn'), render: (row) => formatClock(row.checkIn), excel: (row) => formatClock(row.checkIn) },
+    { key: 'late', header: t('late.columns.late'), render: (row) => <Pill tone="warning">{formatMinutes(row.lateMinutes)}</Pill>, excel: (row) => row.lateMinutes }
+  ]
+
+  const stats = [
+    { label: t('late.stats.total'), value: rows.length, tone: 'warning', icon: FiClock },
+    { label: t('late.stats.minutes'), value: formatMinutes(totalMinutes), tone: 'danger', icon: FiClock },
+    { label: t('late.stats.average'), value: rows.length ? formatMinutes(totalMinutes / rows.length) : '-', tone: 'info', icon: FiClock },
+    { label: t('late.stats.max'), value: rows.length ? formatMinutes(Math.max(...rows.map((row) => row.lateMinutes))) : '-', tone: 'secondary', icon: FiClock }
+  ]
 
   return (
-    <Card className="space-y-4">
-      <ReportPrintHeader title="Late Arrivals Report" subtitle={rangeLabel(fromDate, toDate)} />
-      <div className="flex justify-end print:hidden">
-        <Button variant="outline" icon={FiPrinter} onClick={() => window.print()}>
-          Print
-        </Button>
-      </div>
+    <ReportTab
+      title={t('late.title')}
+      subtitle={period}
+      filename={`late-report-${periodKey(year, month)}`}
+      stats={stats}
+      columns={columns}
+      rows={rows}
+      isLoading={isLoading}
+      isFetching={isFetching}
+      error={error}
+      emptyText={t('late.empty')}
+    />
+  )
+}
 
-      {isError && <p className="rounded-lg bg-danger/10 p-3 text-sm font-semibold text-danger">{getApiErrorMessage(error)}</p>}
+/* ------------------------------- Early tab ------------------------------- */
 
-      {isLoading ? (
-        <Loader />
-      ) : (
-        <Table
-          rows={rows}
-          columns={[
-            { key: 'date', header: 'Date', render: (row) => row.date },
-            {
-              key: 'employee',
-              header: 'Employee',
-              render: (row) => (
-                <div>
-                  <p className="font-bold">{row.employeeName}</p>
-                  <p className="text-xs text-app-muted">{row.employeeCode}</p>
-                </div>
-              )
-            },
-            { key: 'expected', header: 'Expected In', render: (row) => row.expectedLogin },
-            { key: 'actual', header: 'Actual In', render: (row) => formatTime(row.checkIn) },
-            { key: 'late', header: 'Late (min)', render: (row) => row.lateMinutes }
-          ]}
-        />
-      )}
+function EarlyReportTab({ year, month, period }) {
+  const { t } = useTranslation('reports')
+  const { data, isLoading, isFetching, error } = useGetEarlyReportQuery({ year, month })
+  const rows = data?.items || []
+  const totalMinutes = rows.reduce((sum, row) => sum + row.earlyMinutes, 0)
 
-      <div className="flex flex-col gap-3 text-sm text-app-muted print:hidden sm:flex-row sm:items-center sm:justify-between">
-        <span>
-          Page {pagination.page} of {pagination.total_pages || 1} - {pagination.total ?? rows.length} records
-        </span>
-        <div className="flex gap-2">
-          <Button variant="outline" disabled={page <= 1 || isFetching} onClick={() => setPage((current) => Math.max(1, current - 1))}>
-            Previous
-          </Button>
-          <Button variant="outline" disabled={page >= (pagination.total_pages || 1) || isFetching} onClick={() => setPage((current) => current + 1)}>
-            Next
-          </Button>
-        </div>
-      </div>
-    </Card>
+  const columns = [
+    { key: 'date', header: t('early.columns.date'), render: (row) => row.date, excel: (row) => row.date },
+    { key: 'code', header: t('shared.code'), excelOnly: true, excel: (row) => row.employeeCode },
+    {
+      key: 'employee',
+      header: t('early.columns.employee'),
+      headerClassName: 'min-w-[160px] whitespace-nowrap',
+      cellClassName: 'whitespace-nowrap',
+      render: (row) => <EmployeeCell name={row.employeeName} code={row.employeeCode} />,
+      excel: (row) => row.employeeName
+    },
+    { key: 'expected', header: t('early.columns.expectedIn'), render: (row) => formatShortTime(row.expectedLogin), excel: (row) => formatShortTime(row.expectedLogin) },
+    { key: 'actual', header: t('early.columns.actualIn'), render: (row) => formatClock(row.checkIn), excel: (row) => formatClock(row.checkIn) },
+    { key: 'early', header: t('early.columns.early'), render: (row) => <Pill tone="success">{row.earlyDisplay || formatMinutes(row.earlyMinutes)}</Pill>, excel: (row) => row.earlyMinutes }
+  ]
+
+  const stats = [
+    { label: t('early.stats.total'), value: rows.length, tone: 'success', icon: FiSunrise },
+    { label: t('early.stats.minutes'), value: formatMinutes(totalMinutes), tone: 'teal', icon: FiClock },
+    { label: t('early.stats.average'), value: rows.length ? formatMinutes(totalMinutes / rows.length) : '-', tone: 'info', icon: FiClock },
+    { label: t('early.stats.best'), value: rows.length ? formatMinutes(Math.max(...rows.map((row) => row.earlyMinutes))) : '-', tone: 'secondary', icon: FiSunrise }
+  ]
+
+  return (
+    <ReportTab
+      title={t('early.title')}
+      subtitle={period}
+      filename={`early-report-${periodKey(year, month)}`}
+      stats={stats}
+      columns={columns}
+      rows={rows}
+      isLoading={isLoading}
+      isFetching={isFetching}
+      error={error}
+      emptyText={t('early.empty')}
+    />
   )
 }
 
 /* ------------------------------- Leave tab -------------------------------- */
 
-function LeaveReportTab({ fromDate, toDate }) {
-  const [page, setPage] = useState(1)
-  const limit = 20
-  const { data, isLoading, isFetching, isError, error } = useGetLeaveReportQuery({ fromDate, toDate, page, limit }, { skip: !isValidRange(fromDate, toDate) })
+function LeaveReportTab({ year, month, period }) {
+  const { t } = useTranslation('reports')
+  const { data, isLoading, isFetching, error } = useGetLeaveReportQuery({ year, month })
   const rows = data?.items || []
-  const pagination = data?.pagination || { page: 1, total_pages: 1, total: rows.length }
 
-  useEffect(() => {
-    setPage(1)
-  }, [fromDate, toDate])
+  const columns = [
+    { key: 'code', header: t('shared.code'), excelOnly: true, excel: (row) => row.employeeCode },
+    {
+      key: 'employee',
+      header: t('leave.columns.employee'),
+      headerClassName: 'min-w-[160px] whitespace-nowrap',
+      cellClassName: 'whitespace-nowrap',
+      render: (row) => <EmployeeCell name={row.employeeName} code={row.employeeCode} />,
+      excel: (row) => row.employeeName
+    },
+    { key: 'type', header: t('leave.columns.type'), render: (row) => row.leaveTypeName || '-', excel: (row) => row.leaveTypeName },
+    {
+      key: 'range',
+      header: t('leave.columns.dates'),
+      render: (row) => t('leave.datesRange', { start: row.startDate, end: row.endDate }),
+      excel: (row) => `${row.startDate} to ${row.endDate}`
+    },
+    { key: 'days', header: t('leave.columns.days'), render: (row) => row.totalDays, excel: (row) => row.totalDays },
+    { key: 'status', header: t('leave.columns.status'), render: (row) => <Badge status={statusLabel(row.status)} />, excel: (row) => statusLabel(row.status) },
+    { key: 'reason', header: t('leave.columns.reason'), render: (row) => row.reason || '-', excel: (row) => row.reason }
+  ]
+
+  const stats = [
+    { label: t('leave.stats.total'), value: rows.length, tone: 'secondary', icon: FiSun },
+    { label: t('leave.stats.days'), value: rows.reduce((sum, row) => sum + row.totalDays, 0), tone: 'info', icon: FiCalendar }
+  ]
 
   return (
-    <Card className="space-y-4">
-      <ReportPrintHeader title="Leave Report" subtitle={rangeLabel(fromDate, toDate)} />
-      <div className="flex justify-end print:hidden">
-        <Button variant="outline" icon={FiPrinter} onClick={() => window.print()}>
-          Print
-        </Button>
-      </div>
-
-      {isError && <p className="rounded-lg bg-danger/10 p-3 text-sm font-semibold text-danger">{getApiErrorMessage(error)}</p>}
-
-      {isLoading ? (
-        <Loader />
-      ) : (
-        <Table
-          rows={rows}
-          columns={[
-            {
-              key: 'employee',
-              header: 'Employee',
-              render: (row) => (
-                <div>
-                  <p className="font-bold">{row.employeeName}</p>
-                  <p className="text-xs text-app-muted">{row.employeeCode}</p>
-                </div>
-              )
-            },
-            { key: 'type', header: 'Leave Type', render: (row) => row.leaveTypeName },
-            { key: 'range', header: 'Dates', render: (row) => `${row.startDate} to ${row.endDate}` },
-            { key: 'days', header: 'Days', render: (row) => row.totalDays },
-            { key: 'status', header: 'Status', render: (row) => <Badge status={statusLabel(row.status)} /> },
-            { key: 'reason', header: 'Reason', render: (row) => row.reason || '-' }
-          ]}
-        />
-      )}
-
-      <div className="flex flex-col gap-3 text-sm text-app-muted print:hidden sm:flex-row sm:items-center sm:justify-between">
-        <span>
-          Page {pagination.page} of {pagination.total_pages || 1} - {pagination.total ?? rows.length} records
-        </span>
-        <div className="flex gap-2">
-          <Button variant="outline" disabled={page <= 1 || isFetching} onClick={() => setPage((current) => Math.max(1, current - 1))}>
-            Previous
-          </Button>
-          <Button variant="outline" disabled={page >= (pagination.total_pages || 1) || isFetching} onClick={() => setPage((current) => current + 1)}>
-            Next
-          </Button>
-        </div>
-      </div>
-    </Card>
+    <ReportTab
+      title={t('leave.title')}
+      subtitle={period}
+      filename={`leave-report-${periodKey(year, month)}`}
+      stats={stats}
+      columns={columns}
+      rows={rows}
+      isLoading={isLoading}
+      isFetching={isFetching}
+      error={error}
+      emptyText={t('leave.empty')}
+    />
   )
 }
 
 /* --------------------------- Employee Report tab --------------------------- */
-// Employee search karo (naam / employee ID), aur uska poora month ka report
-// (summary + late + leave + kisi ek din ka detail) ek jagah dikhe,
-// print bhi ho sake aur Excel me bhi download ho.
+// Employee chuno -> uska poora month: summary + late + early + leave (+ kisi ek din ka detail).
+// Monthly / Late / Early / Leave APIs employee_id support karte hain, wahi bhej rahe hain.
 
-function EmployeeReportTab({ fromDate, toDate }) {
+function EmployeeReportTab({ year, month, period }) {
   const { t } = useTranslation('reports')
-  const formatters = useFormatters()
   const [params, setParams] = useSearchParams()
   const employeeId = params.get('employee')
   const [search, setSearch] = useState('')
@@ -412,52 +525,57 @@ function EmployeeReportTab({ fromDate, toDate }) {
     setEmployeePage(1)
   }, [debouncedSearch])
 
-  const { data: employeeResults, isFetching: employeesFetching } = useGetEmployeesQuery(
-    { page: employeePage, search: debouncedSearch, limit: 20 }
-  )
+  const { data: employeeResults, isFetching: employeesFetching } = useGetEmployeesQuery({ page: employeePage, search: debouncedSearch, limit: 20 })
   const { data: linkedEmployee } = useGetEmployeeQuery(employeeId, { skip: !employeeId })
 
   useEffect(() => {
     if (employeeId && linkedEmployee) setSelectedEmployee(linkedEmployee)
   }, [employeeId, linkedEmployee])
 
-  const rangeValid = isValidRange(fromDate, toDate)
-  const { data: monthlyData, isLoading: monthlyLoading } = useGetMonthlyReportQuery({ fromDate, toDate }, { skip: !selectedEmployee || !rangeValid })
-  // Late/Leave APIs abhi employee-wise filter support nahi karte (sirf year/month/page/limit),
-  // isliye ek bada page fetch karke client-side is employee ke rows filter kiye ja rahe hain.
-  const { data: lateData, isLoading: lateLoading } = useGetLateReportQuery({ fromDate, toDate, page: 1, limit: 200 }, { skip: !selectedEmployee || !rangeValid })
-  const { data: leaveData, isLoading: leaveLoading } = useGetLeaveReportQuery({ fromDate, toDate, page: 1, limit: 200 }, { skip: !selectedEmployee || !rangeValid })
-  const { data: dailyData, isFetching: dailyFetching } = useGetDailyReportQuery(
-    { date, page: 1, limit: 200 },
-    { skip: !selectedEmployee || !date }
-  )
+  const reportArgs = { year, month, employeeId: selectedEmployee?.id }
+  const skip = !selectedEmployee
+  const { data: monthlyData, isLoading: monthlyLoading } = useGetMonthlyReportQuery(reportArgs, { skip })
+  const { data: lateData, isLoading: lateLoading } = useGetLateReportQuery(reportArgs, { skip })
+  const { data: earlyData, isLoading: earlyLoading } = useGetEarlyReportQuery(reportArgs, { skip })
+  const { data: leaveData, isLoading: leaveLoading } = useGetLeaveReportQuery(reportArgs, { skip })
+  const { data: dailyData, isFetching: dailyFetching } = useGetDailyReportQuery({ date }, { skip: !selectedEmployee || !date })
+
+  const sameEmployee = (row) => String(row.employeeId ?? '') === String(selectedEmployee?.id) || row.employeeCode === selectedEmployee?.code
 
   const summary = useMemo(() => {
     if (!selectedEmployee) return null
-    return (monthlyData?.items || []).find((row) => String(row.employeeId) === String(selectedEmployee.id)) || null
+    return (monthlyData?.items || []).find(sameEmployee) || null
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [monthlyData, selectedEmployee])
 
-  const lateRows = useMemo(() => {
-    if (!selectedEmployee) return []
-    return (lateData?.items || []).filter((row) => row.employeeCode === selectedEmployee.code)
-  }, [lateData, selectedEmployee])
-
-  const leaveRows = useMemo(() => {
-    if (!selectedEmployee) return []
-    return (leaveData?.items || []).filter((row) => row.employeeCode === selectedEmployee.code)
-  }, [leaveData, selectedEmployee])
+  const lateRows = useMemo(() => (selectedEmployee ? (lateData?.items || []).filter((row) => row.employeeCode === selectedEmployee.code) : []), [lateData, selectedEmployee])
+  const earlyRows = useMemo(() => (selectedEmployee ? (earlyData?.items || []).filter((row) => row.employeeCode === selectedEmployee.code) : []), [earlyData, selectedEmployee])
+  const leaveRows = useMemo(() => (selectedEmployee ? (leaveData?.items || []).filter((row) => row.employeeCode === selectedEmployee.code) : []), [leaveData, selectedEmployee])
 
   const dailyRow = useMemo(() => {
     if (!selectedEmployee || !date) return null
-    return (dailyData?.items || []).find((row) => String(row.employeeId) === String(selectedEmployee.id)) || null
-  }, [dailyData, selectedEmployee, date])
+    const row = (dailyData?.items || []).find((item) => String(item.employeeId) === String(selectedEmployee.id))
+    if (!row) return null
+    return { ...row, earlyInMinutes: earlyRows.find((item) => item.date === date)?.earlyMinutes || 0 }
+  }, [dailyData, selectedEmployee, date, earlyRows])
 
-  const isBusy = monthlyLoading || lateLoading || leaveLoading
+  const isBusy = monthlyLoading || lateLoading || earlyLoading || leaveLoading
+  const lateTotal = lateRows.reduce((sum, row) => sum + row.lateMinutes, 0)
+  const earlyTotal = earlyRows.reduce((sum, row) => sum + row.earlyMinutes, 0)
+
+  function updateEmployeeParam(id) {
+    setParams((current) => {
+      const next = new window.URLSearchParams(current)
+      if (id) next.set('employee', id)
+      else next.delete('employee')
+      return next
+    })
+  }
 
   function clearEmployee() {
     setSelectedEmployee(null)
     setSearch('')
-    setParams((current) => { const next = new window.URLSearchParams(current); next.delete('employee'); return next })
+    updateEmployeeParam(null)
   }
 
   function backToList() {
@@ -467,12 +585,12 @@ function EmployeeReportTab({ fromDate, toDate }) {
     setDebouncedSearch('')
     setDropdownOpen(false)
     setEmployeePage(1)
-    setParams((current) => { const next = new window.URLSearchParams(current); next.delete('employee'); return next })
+    updateEmployeeParam(null)
   }
 
   function selectEmployee(employee) {
     setSelectedEmployee(employee)
-    setParams((current) => { const next = new window.URLSearchParams(current); next.set('employee', employee.id); return next })
+    updateEmployeeParam(employee.id)
     setSearch(`${employee.name} (${employee.code})`)
     setDropdownOpen(false)
   }
@@ -482,40 +600,112 @@ function EmployeeReportTab({ fromDate, toDate }) {
     setExcelExporting(true)
     setExcelError('')
     try {
-      await downloadEmployeeExcelReport({
-        employee: selectedEmployee,
-        fromDate,
-        toDate,
-        summary,
-        lateRows,
-        leaveRows,
-        dailyRows: dailyRow ? [dailyRow] : [],
-        t,
-        formatters
-      })
+      const title = `${selectedEmployee.name} (${selectedEmployee.code})`
+      const empty = t('shared.noData')
+      const sheets = [
+        {
+          name: t('excel.sheets.summary'),
+          title,
+          subtitle: period,
+          headers: [t('excel.metric'), t('excel.value')],
+          rows: [
+            [t('employee.stats.present'), summary?.presentDays ?? 0],
+            [t('employee.stats.absent'), summary?.absentDays ?? 0],
+            [t('employee.stats.leave'), summary?.leaveDays ?? 0],
+            [t('employee.stats.late'), lateRows.length],
+            [`${t('employee.stats.late')} (min)`, lateTotal],
+            [t('employee.stats.early'), earlyRows.length],
+            [`${t('employee.stats.early')} (min)`, earlyTotal],
+            [t('employee.stats.worked'), formatMinutes(summary?.workedMinutes)]
+          ]
+        }
+      ]
+
+      if (date && dailyRow) {
+        sheets.push({
+          name: t('excel.sheets.daily'),
+          title,
+          subtitle: date,
+          headers: [t('daily.columns.status'), t('daily.columns.checkIn'), t('daily.columns.checkOut'), t('daily.columns.late'), t('daily.columns.earlyIn'), t('daily.columns.earlyOut'), t('daily.columns.worked')],
+          rows: [[statusLabel(dailyRow.status), formatClock(dailyRow.checkIn), formatClock(dailyRow.checkOut), dailyRow.lateMinutes, dailyRow.earlyInMinutes, dailyRow.earlyMinutes, dailyRow.workedMinutes === null ? '' : formatMinutes(dailyRow.workedMinutes)]]
+        })
+      }
+
+      sheets.push(
+        {
+          name: t('excel.sheets.late'),
+          title,
+          subtitle: period,
+          headers: [t('late.columns.date'), t('late.columns.expectedIn'), t('late.columns.actualIn'), `${t('late.columns.late')} (min)`],
+          rows: lateRows.map((row) => [row.date, formatShortTime(row.expectedLogin), formatClock(row.checkIn), row.lateMinutes]),
+          emptyText: empty
+        },
+        {
+          name: t('excel.sheets.early'),
+          title,
+          subtitle: period,
+          headers: [t('early.columns.date'), t('early.columns.expectedIn'), t('early.columns.actualIn'), `${t('early.columns.early')} (min)`],
+          rows: earlyRows.map((row) => [row.date, formatShortTime(row.expectedLogin), formatClock(row.checkIn), row.earlyMinutes]),
+          emptyText: empty
+        },
+        {
+          name: t('excel.sheets.leave'),
+          title,
+          subtitle: period,
+          headers: [t('leave.columns.type'), t('leave.columns.dates'), t('leave.columns.days'), t('leave.columns.status'), t('leave.columns.reason')],
+          rows: leaveRows.map((row) => [row.leaveTypeName, `${row.startDate} to ${row.endDate}`, row.totalDays, statusLabel(row.status), row.reason]),
+          emptyText: empty
+        }
+      )
+
+      await downloadWorkbook({ filename: `${selectedEmployee.code}-report-${year}-${padMonth(month)}.xlsx`, sheets })
     } catch (err) {
-      setExcelError(err.message || 'Excel export failed.')
+      setExcelError(err?.message || t('errors.exportFailed'))
     } finally {
       setExcelExporting(false)
     }
   }
+
+  const employeeColumns = [
+    {
+      key: 'employee',
+      header: t('employee.list.employee'),
+      render: (employee) => (
+        <button type="button" className="flex items-center gap-3 text-left" onClick={() => selectEmployee(employee)}>
+          <Avatar name={employee.name} />
+          <span className="font-bold text-app-text">{employee.name}</span>
+        </button>
+      )
+    },
+    { key: 'code', header: t('employee.list.code'), render: (employee) => employee.code || '-' },
+    { key: 'email', header: t('employee.list.email'), render: (employee) => employee.email || '-' },
+    { key: 'phone', header: t('employee.list.phone'), render: (employee) => employee.phone || '-' },
+    { key: 'status', header: t('employee.list.status'), render: (employee) => <Badge status={employee.status} /> },
+    {
+      key: 'actions',
+      header: t('employee.list.actions'),
+      headerClassName: 'text-left',
+      cellClassName: 'text-left',
+      render: (employee) => <Button variant="outline" icon={FiEye} aria-label={t('actions.view')} onClick={() => selectEmployee(employee)} />
+    }
+  ]
 
   return (
     <div className="space-y-4">
       <Card className="print:hidden">
         <div className="grid gap-3 lg:grid-cols-[1fr_220px]">
           <div className="relative">
-            <label className="mb-1.5 block text-sm font-semibold text-app-text">Search Employee (Name / Employee ID)</label>
+            <label className="mb-1.5 block text-sm font-semibold text-app-text">{t('filters.searchEmployee')}</label>
             <div className="relative">
               <FiSearch className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-app-muted" />
               <input
                 className="min-h-10 w-full rounded-lg border border-primary/15 bg-app-bg pl-9 pr-9 text-app-text outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/20"
-                placeholder="e.g. Satyam Singh or EMP001"
+                placeholder={t('filters.searchPlaceholder')}
                 value={search}
                 onChange={(event) => {
                   setSearch(event.target.value)
                   setSelectedEmployee(null)
-                  setParams((current) => { const next = new window.URLSearchParams(current); next.delete('employee'); return next })
+                  updateEmployeeParam(null)
                   setDropdownOpen(true)
                 }}
                 onFocus={() => setDropdownOpen(true)}
@@ -530,17 +720,15 @@ function EmployeeReportTab({ fromDate, toDate }) {
 
             {dropdownOpen && debouncedSearch && !selectedEmployee && (
               <div className="absolute z-10 mt-1 max-h-64 w-full overflow-y-auto rounded-lg border border-primary/15 bg-app-surface shadow-soft">
-                {employeesFetching && <p className="p-3 text-sm text-app-muted">Searching...</p>}
-                {!employeesFetching && !(employeeResults?.items || []).length && <p className="p-3 text-sm text-app-muted">No employee found.</p>}
+                {employeesFetching && <p className="p-3 text-sm text-app-muted">{t('employee.searching')}</p>}
+                {!employeesFetching && !(employeeResults?.items || []).length && <p className="p-3 text-sm text-app-muted">{t('employee.noEmployee')}</p>}
                 {(employeeResults?.items || []).map((employee) => (
                   <button
                     key={employee.id}
                     type="button"
                     className="flex w-full items-center justify-between px-3 py-2 text-left text-sm hover:bg-primary/10"
                     onMouseDown={(event) => event.preventDefault()}
-                    onClick={() => {
-                      selectEmployee(employee)
-                    }}
+                    onClick={() => selectEmployee(employee)}
                   >
                     <span className="font-semibold text-app-text">{employee.name}</span>
                     <span className="text-xs text-app-muted">{employee.code}</span>
@@ -550,49 +738,65 @@ function EmployeeReportTab({ fromDate, toDate }) {
             )}
           </div>
 
-          <Input label="Specific Date (optional)" type="date" value={date} onChange={(event) => setDate(event.target.value)} />
+          <Input label={t('filters.specificDate')} type="date" value={date} onChange={(event) => setDate(event.target.value)} />
         </div>
       </Card>
 
       {!selectedEmployee && (
         <Card className="space-y-4">
-          <p className="text-sm text-app-muted">{t('employee.searchHint', { from: fromDate, to: toDate })}</p>
-          {employeesFetching ? <Loader /> : <Table rows={employeeResults?.items || []} columns={[
-            { key: 'employee', header: t('employee.list.employee'), render: (employee) => <button type="button" className="flex items-center gap-3 text-left" onClick={() => selectEmployee(employee)}><Avatar name={employee.name} /><span className="font-bold text-app-text">{employee.name}</span></button> },
-            { key: 'code', header: t('employee.list.code'), render: (employee) => employee.code || '-' },
-            { key: 'email', header: t('employee.list.email'), render: (employee) => employee.email || '-' },
-            { key: 'phone', header: t('employee.list.phone'), render: (employee) => employee.phone || '-' },
-            { key: 'status', header: t('employee.list.status'), render: (employee) => <Badge status={employee.status} /> },
-            { key: 'actions', header: t('employee.list.actions'), headerClassName: 'text-left', cellClassName: 'text-left', render: (employee) => <Button variant="outline" icon={FiEye} aria-label={t('actions.view')} onClick={() => selectEmployee(employee)} /> }
-          ]} />}
-          {(employeeResults?.pagination?.total_pages || 1) > 1 && <div className="flex items-center justify-between border-t border-primary/10 pt-4 text-sm text-app-muted"><span>{t('common:pagination.summary', { page: employeeResults.pagination.page, totalPages: employeeResults.pagination.total_pages, shown: employeeResults.items.length, total: employeeResults.pagination.total })}</span><div className="flex gap-2"><Button variant="outline" disabled={employeePage <= 1 || employeesFetching} onClick={() => setEmployeePage((page) => page - 1)}>{t('common:actions.previous')}</Button><Button variant="outline" disabled={employeePage >= employeeResults.pagination.total_pages || employeesFetching} onClick={() => setEmployeePage((page) => page + 1)}>{t('common:actions.next')}</Button></div></div>}
+          <p className="text-sm text-app-muted">{t('employee.searchHint', { period })}</p>
+          {employeesFetching ? <Loader /> : <Table rows={employeeResults?.items || []} columns={employeeColumns} />}
+          {(employeeResults?.pagination?.total_pages || 1) > 1 && (
+            <div className="flex items-center justify-between border-t border-primary/10 pt-4 text-sm text-app-muted">
+              <span>
+                {t('common:pagination.summary', {
+                  page: employeeResults.pagination.page,
+                  totalPages: employeeResults.pagination.total_pages,
+                  shown: employeeResults.items.length,
+                  total: employeeResults.pagination.total
+                })}
+              </span>
+              <div className="flex gap-2">
+                <Button variant="outline" disabled={employeePage <= 1 || employeesFetching} onClick={() => setEmployeePage((page) => page - 1)}>
+                  {t('common:actions.previous')}
+                </Button>
+                <Button variant="outline" disabled={employeePage >= employeeResults.pagination.total_pages || employeesFetching} onClick={() => setEmployeePage((page) => page + 1)}>
+                  {t('common:actions.next')}
+                </Button>
+              </div>
+            </div>
+          )}
         </Card>
       )}
 
       {selectedEmployee && (
         <Card className="space-y-6">
           <ReportPrintHeader
-            title="Employee Attendance Report"
-            subtitle={`${selectedEmployee.name} (${selectedEmployee.code}) · ${rangeLabel(fromDate, toDate)}`}
+            title={t('employee.title')}
+            subtitle={`${selectedEmployee.name} (${selectedEmployee.code}) · ${period}`}
+            meta={[
+              { label: t('print.period'), value: period },
+              { label: t('print.department'), value: selectedEmployee.department }
+            ]}
           />
 
           <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
             <div className="flex items-center gap-3">
-              <Button variant="outline" icon={FiArrowLeft} className="print:hidden" onClick={backToList}>{t('actions.back')}</Button>
+              <Button variant="outline" icon={FiArrowLeft} className="print:hidden" onClick={backToList}>
+                {t('actions.back')}
+              </Button>
               <Avatar name={selectedEmployee.name} />
               <div>
                 <p className="text-lg font-black text-app-text">{selectedEmployee.name}</p>
-                <p className="text-sm text-app-muted">
-                  {selectedEmployee.code}  {selectedEmployee.department}  {selectedEmployee.role}
-                </p>
+                <p className="text-sm text-app-muted">{[selectedEmployee.code, selectedEmployee.department, selectedEmployee.role].filter(Boolean).join(' · ')}</p>
               </div>
             </div>
             <div className="flex flex-wrap gap-2 print:hidden">
-              <Button variant="outline" icon={FiPrinter} onClick={() => window.print()}>
-                Print / Save PDF
+              <Button variant="outline" icon={FiPrinter} onClick={() => printReport(`${selectedEmployee.name} (${selectedEmployee.code}) ${t('employee.title')} ${period}`)}>
+                {t('actions.printSavePdf')}
               </Button>
-              <Button icon={FiDownload} onClick={handleEmployeeExcel} disabled={excelExporting}>
-                {excelExporting ? 'Preparing...' : 'Download Excel'}
+              <Button icon={FiDownload} onClick={handleEmployeeExcel} disabled={excelExporting || isBusy}>
+                {excelExporting ? t('actions.preparing') : t('actions.downloadExcel')}
               </Button>
             </div>
           </div>
@@ -603,68 +807,76 @@ function EmployeeReportTab({ fromDate, toDate }) {
             <Loader />
           ) : (
             <>
-              <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-                <StatCard label="Present Days" value={summary?.presentDays ?? '-'} tone="success" icon={FiCalendar} />
-                <StatCard label="Absent Days" value={summary?.absentDays ?? '-'} tone="danger" icon={FiCalendar} />
-                <StatCard label="Leave Days" value={summary?.leaveDays ?? '-'} tone="secondary" icon={FiCalendar} />
-                <StatCard
-                  label="Late Count"
-                  value={summary?.lateCount ?? '-'}
-                  tone="warning"
-                  icon={FiCalendar}
-                  meta={summary ? `${summary.totalLateMinutes || 0} min total` : ''}
-                />
+              <div className="print-avoid-break grid gap-3 sm:grid-cols-2 xl:grid-cols-3 print:grid-cols-3">
+                <StatCard label={t('employee.stats.present')} value={summary?.presentDays ?? '-'} tone="success" icon={FiCheckCircle} />
+                <StatCard label={t('employee.stats.absent')} value={summary?.absentDays ?? '-'} tone="danger" icon={FiX} />
+                <StatCard label={t('employee.stats.leave')} value={summary?.leaveDays ?? '-'} tone="secondary" icon={FiSun} />
+                <StatCard label={t('employee.stats.late')} value={lateRows.length} tone="warning" icon={FiClock} meta={t('employee.statMeta.minutesTotal', { value: formatMinutes(lateTotal) })} />
+                <StatCard label={t('employee.stats.early')} value={earlyRows.length} tone="info" icon={FiSunrise} meta={t('employee.statMeta.minutesTotal', { value: formatMinutes(earlyTotal) })} />
+                <StatCard label={t('employee.stats.worked')} value={summary ? formatMinutes(summary.workedMinutes) : '-'} tone="teal" icon={FiCalendar} />
               </div>
 
-              {!summary && (
-               <p className="text-sm text-app-muted">No data found for this employee in the selected date range.</p>
-              )}
+              {!summary && <p className="text-sm text-app-muted">{t('employee.noSummary')}</p>}
 
               {date && (
-                <div>
-                  <h3 className="mb-2 font-bold text-app-text">Attendance on {date}</h3>
+                <div className="print-avoid-break">
+                  <h3 className="mb-2 font-bold text-app-text">{t('employee.attendanceOn', { date })}</h3>
                   {dailyFetching ? (
                     <Loader />
                   ) : dailyRow ? (
                     <Table
                       rows={[dailyRow]}
                       columns={[
-                        { key: 'status', header: 'Status', render: (row) => <Badge status={statusLabel(row.status)} /> },
-                        { key: 'checkIn', header: 'Check In', render: (row) => formatTime(row.checkIn) },
-                        { key: 'checkOut', header: 'Check Out', render: (row) => formatTime(row.checkOut) },
-                        { key: 'late', header: 'Late (min)', render: (row) => row.lateMinutes || 0 },
-                        { key: 'worked', header: 'Worked (min)', render: (row) => row.workedMinutes || 0 }
+                        { key: 'status', header: t('daily.columns.status'), render: (row) => <Badge status={statusLabel(row.status)} /> },
+                        { key: 'checkIn', header: t('daily.columns.checkIn'), render: (row) => formatClock(row.checkIn) },
+                        { key: 'checkOut', header: t('daily.columns.checkOut'), render: (row) => formatClock(row.checkOut) },
+                        { key: 'late', header: t('daily.columns.late'), render: (row) => <MinutesPill minutes={row.lateMinutes} tone="warning" /> },
+                        { key: 'earlyIn', header: t('daily.columns.earlyIn'), render: (row) => <MinutesPill minutes={row.earlyInMinutes} tone="success" /> },
+                        { key: 'worked', header: t('daily.columns.worked'), render: (row) => (row.workedMinutes === null ? '-' : formatMinutes(row.workedMinutes)) }
                       ]}
                     />
                   ) : (
-                   <p className="text-sm text-app-muted">No record found for this date.</p>
+                    <p className="text-sm text-app-muted">{t('employee.noDateRecord')}</p>
                   )}
                 </div>
               )}
 
               <div>
-                <h3 className="mb-2 font-bold text-app-text">Late Arrivals ({lateRows.length})</h3>
+                <h3 className="mb-2 font-bold text-app-text">{t('employee.sections.late', { count: lateRows.length })}</h3>
                 <Table
                   rows={lateRows}
                   columns={[
-                    { key: 'date', header: 'Date', render: (row) => row.date },
-                    { key: 'expected', header: 'Expected In', render: (row) => row.expectedLogin },
-                    { key: 'actual', header: 'Actual In', render: (row) => formatTime(row.checkIn) },
-                    { key: 'late', header: 'Late (min)', render: (row) => row.lateMinutes }
+                    { key: 'date', header: t('late.columns.date'), render: (row) => row.date },
+                    { key: 'expected', header: t('late.columns.expectedIn'), render: (row) => formatShortTime(row.expectedLogin) },
+                    { key: 'actual', header: t('late.columns.actualIn'), render: (row) => formatClock(row.checkIn) },
+                    { key: 'late', header: t('late.columns.late'), render: (row) => <Pill tone="warning">{formatMinutes(row.lateMinutes)}</Pill> }
+                  ]}
+                />
+              </div>
+
+              <div className="print-avoid-break">
+                <h3 className="mb-2 font-bold text-app-text">{t('employee.sections.early', { count: earlyRows.length })}</h3>
+                <Table
+                  rows={earlyRows}
+                  columns={[
+                    { key: 'date', header: t('early.columns.date'), render: (row) => row.date },
+                    { key: 'expected', header: t('early.columns.expectedIn'), render: (row) => formatShortTime(row.expectedLogin) },
+                    { key: 'actual', header: t('early.columns.actualIn'), render: (row) => formatClock(row.checkIn) },
+                    { key: 'early', header: t('early.columns.early'), render: (row) => <Pill tone="success">{row.earlyDisplay || formatMinutes(row.earlyMinutes)}</Pill> }
                   ]}
                 />
               </div>
 
               <div>
-                <h3 className="mb-2 font-bold text-app-text">Leave History ({leaveRows.length})</h3>
+                <h3 className="mb-2 font-bold text-app-text">{t('employee.sections.leave', { count: leaveRows.length })}</h3>
                 <Table
                   rows={leaveRows}
                   columns={[
-                    { key: 'type', header: 'Leave Type', render: (row) => row.leaveTypeName },
-                    { key: 'range', header: 'Dates', render: (row) => `${row.startDate} to ${row.endDate}` },
-                    { key: 'days', header: 'Days', render: (row) => row.totalDays },
-                    { key: 'status', header: 'Status', render: (row) => <Badge status={statusLabel(row.status)} /> },
-                    { key: 'reason', header: 'Reason', render: (row) => row.reason || '-' }
+                    { key: 'type', header: t('leave.columns.type'), render: (row) => row.leaveTypeName || '-' },
+                    { key: 'range', header: t('leave.columns.dates'), render: (row) => t('leave.datesRange', { start: row.startDate, end: row.endDate }) },
+                    { key: 'days', header: t('leave.columns.days'), render: (row) => row.totalDays },
+                    { key: 'status', header: t('leave.columns.status'), render: (row) => <Badge status={statusLabel(row.status)} /> },
+                    { key: 'reason', header: t('leave.columns.reason'), render: (row) => row.reason || '-' }
                   ]}
                 />
               </div>
